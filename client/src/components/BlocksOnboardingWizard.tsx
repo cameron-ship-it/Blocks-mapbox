@@ -12,6 +12,11 @@ import "mapbox-gl/dist/mapbox-gl.css";
 
 type WizardStep = "budget" | "borough" | "neighborhood" | "map" | "complete";
 
+// Mapbox layer constants
+const LAYER_SOURCE = "blocks";
+const LAYER_ID = "blocks-fill";
+const LAYER_LINE_ID = "blocks-outline";
+
 interface MapboxConfig {
   token: string;
   tilesUrl: string;
@@ -39,6 +44,7 @@ export default function BlocksOnboardingWizard() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapError, setMapError] = useState<string | null>(null);
+  const selectedIds = useRef<Set<string>>(new Set());
 
   const { data: mapboxConfig } = useQuery<MapboxConfig>({
     queryKey: ["/api/mapbox-config"],
@@ -118,6 +124,8 @@ export default function BlocksOnboardingWizard() {
       map.current.on("load", () => {
         // Add blocks layer if tiles URL is available
         if (mapboxConfig.tilesUrl && map.current) {
+          const LAYER_SOURCE_LAYER = mapboxConfig.sourceLayer || "blocks";
+          
           // Use 'url' for Mapbox tileset references, 'tiles' for URL templates
           const sourceConfig: any = {
             type: "vector",
@@ -130,13 +138,13 @@ export default function BlocksOnboardingWizard() {
             sourceConfig.tiles = [mapboxConfig.tilesUrl];
           }
           
-          map.current.addSource("blocks", sourceConfig);
+          map.current.addSource(LAYER_SOURCE, sourceConfig);
 
           map.current.addLayer({
-            id: "blocks-fill",
+            id: LAYER_ID,
             type: "fill",
-            source: "blocks",
-            "source-layer": mapboxConfig.sourceLayer || "blocks",
+            source: LAYER_SOURCE,
+            "source-layer": LAYER_SOURCE_LAYER,
             paint: {
               "fill-color": [
                 "case",
@@ -149,58 +157,71 @@ export default function BlocksOnboardingWizard() {
           });
 
           map.current.addLayer({
-            id: "blocks-outline",
+            id: LAYER_LINE_ID,
             type: "line",
-            source: "blocks",
-            "source-layer": mapboxConfig.sourceLayer || "blocks",
+            source: LAYER_SOURCE,
+            "source-layer": LAYER_SOURCE_LAYER,
             paint: {
-              "line-color": "#627BC1",
-              "line-width": 1,
+              "line-color": "#475569",
+              "line-width": 0.6,
             },
           });
 
+          // Runtime validator to prevent "wrong sourceLayer" bug
+          const layers = map.current.getStyle().layers || [];
+          const fillLayer = layers.find(l => l.id === LAYER_ID) as any;
+          const srcLayerUsedByFill = fillLayer?.["source-layer"];
+          if (srcLayerUsedByFill !== LAYER_SOURCE_LAYER) {
+            console.error("source-layer mismatch:", {
+              expected: LAYER_SOURCE_LAYER,
+              actual: srcLayerUsedByFill
+            });
+          }
+
           // Handle block clicks
-          map.current.on("click", "blocks-fill", (e) => {
-            if (e.features && e.features[0]) {
-              const feature = e.features[0];
-              const featureId = feature.id;
-              
-              if (featureId === undefined || featureId === null) {
-                console.warn("Block has no ID, cannot select");
-                return;
-              }
-              
-              const blockId = featureId.toString();
-              const key = { 
-                source: "blocks", 
-                sourceLayer: mapboxConfig.sourceLayer || "blocks", 
-                id: featureId 
-              };
-              
-              setWizardState((prev) => {
-                const next = new Set(prev.selectedBlocks);
-                if (next.has(blockId)) {
-                  next.delete(blockId);
-                  if (map.current) {
-                    map.current.setFeatureState(key, { selected: false });
-                  }
-                } else {
-                  next.add(blockId);
-                  if (map.current) {
-                    map.current.setFeatureState(key, { selected: true });
-                  }
-                }
-                return { ...prev, selectedBlocks: next };
-              });
+          map.current.on("click", LAYER_ID, (e) => {
+            const f = map.current?.queryRenderedFeatures(e.point, { layers: [LAYER_ID] })?.[0];
+            if (!f) return;
+
+            // ID sanity: prefer f.id (from promoteId); fallback to properties.block_id
+            const rawId = (f.id ?? (f.properties && f.properties.block_id));
+            if (rawId === undefined || rawId === null) {
+              console.warn("No id/block_id on feature. Check LAYER_SOURCE_LAYER and promoteId.");
+              return;
             }
+            
+            // Normalize id to a stable primitive (string is safest across tiles)
+            const id = typeof rawId === "number" ? rawId : String(rawId);
+            console.log("clicked id:", rawId, "normalized:", id, "layer:", LAYER_SOURCE_LAYER);
+
+            const key = { source: LAYER_SOURCE, sourceLayer: LAYER_SOURCE_LAYER, id };
+
+            setWizardState((prev) => {
+              const next = new Set(prev.selectedBlocks);
+              const idStr = String(id);
+              if (next.has(idStr)) {
+                next.delete(idStr);
+                selectedIds.current.delete(idStr);
+                if (map.current) {
+                  map.current.setFeatureState(key, { selected: false });
+                }
+              } else {
+                next.add(idStr);
+                selectedIds.current.add(idStr);
+                if (map.current) {
+                  map.current.setFeatureState(key, { selected: true });
+                }
+              }
+              return { ...prev, selectedBlocks: next };
+            });
           });
 
           // Change cursor on hover
-          map.current.on("mouseenter", "blocks-fill", () => {
+          map.current.on("mouseenter", LAYER_ID, () => {
             if (map.current) map.current.getCanvas().style.cursor = "pointer";
           });
 
-          map.current.on("mouseleave", "blocks-fill", () => {
+          map.current.on("mouseleave", LAYER_ID, () => {
             if (map.current) map.current.getCanvas().style.cursor = "";
           });
         }
@@ -239,6 +260,18 @@ export default function BlocksOnboardingWizard() {
   };
 
   const handleRestart = () => {
+    // Clear feature states when restarting
+    if (map.current && mapboxConfig) {
+      const sourceLayer = mapboxConfig.sourceLayer || "blocks";
+      selectedIds.current.forEach((id) => {
+        map.current?.setFeatureState(
+          { source: LAYER_SOURCE, sourceLayer: sourceLayer, id },
+          { selected: false }
+        );
+      });
+      selectedIds.current.clear();
+    }
+    
     setCurrentStep("budget");
     setWizardState({
       budgetMin: 1500,
@@ -264,9 +297,10 @@ export default function BlocksOnboardingWizard() {
       const id = isNaN(numericId) ? blockId : numericId;
       
       map.current.setFeatureState(
-        { source: "blocks", sourceLayer: sourceLayer, id },
+        { source: LAYER_SOURCE, sourceLayer: sourceLayer, id },
         { selected: false }
       );
+      selectedIds.current.delete(String(id));
       
       setWizardState((prev) => {
         const next = new Set(prev.selectedBlocks);
@@ -285,10 +319,12 @@ export default function BlocksOnboardingWizard() {
         const id = isNaN(numericId) ? blockId : numericId;
         
         map.current?.setFeatureState(
-          { source: "blocks", sourceLayer: sourceLayer, id },
+          { source: LAYER_SOURCE, sourceLayer: sourceLayer, id },
           { selected: false }
         );
       });
+      
+      selectedIds.current.clear();
       
       setWizardState((prev) => ({
         ...prev,
