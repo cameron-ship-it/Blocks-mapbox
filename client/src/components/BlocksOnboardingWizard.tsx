@@ -28,13 +28,30 @@ interface WizardState {
 
 export default function BlocksOnboardingWizard() {
   const [currentStep, setCurrentStep] = useState<WizardStep>("budget");
-  const [wizardState, setWizardState] = useState<WizardState>({
-    budgetMin: 1500,
-    budgetMax: 4000,
-    selectedBoroughs: [],
-    selectedNeighborhoods: [],
-    selectedBlocks: [],
+  
+  // Load saved state from localStorage on mount
+  const [wizardState, setWizardState] = useState<WizardState>(() => {
+    const saved = localStorage.getItem("blocksWizardState");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        // If parsing fails, use defaults
+      }
+    }
+    return {
+      budgetMin: 1500,
+      budgetMax: 4000,
+      selectedBoroughs: [],
+      selectedNeighborhoods: [],
+      selectedBlocks: [],
+    };
   });
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("blocksWizardState", JSON.stringify(wizardState));
+  }, [wizardState]);
 
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -158,7 +175,31 @@ export default function BlocksOnboardingWizard() {
             },
           });
 
-          // Handle block clicks
+          // Restore selected block state from wizardState
+          if (wizardState.selectedBlocks.length > 0 && map.current) {
+            const selectedBlockId = wizardState.selectedBlocks[0];
+            // Wait for source data to load, then set feature state
+            map.current.once("idle", () => {
+              if (map.current) {
+                const features = map.current.querySourceFeatures("blocks", {
+                  sourceLayer: mapboxConfig.sourceLayer || "blocks"
+                });
+                const selectedFeature = features.find(f => f.id?.toString() === selectedBlockId);
+                if (selectedFeature && selectedFeature.id !== undefined) {
+                  map.current.setFeatureState(
+                    { 
+                      source: "blocks", 
+                      sourceLayer: mapboxConfig.sourceLayer || "blocks", 
+                      id: selectedFeature.id 
+                    } as any,
+                    { selected: true }
+                  );
+                }
+              }
+            });
+          }
+
+          // Handle block clicks - single selection only
           map.current.on("click", "blocks-fill", (e) => {
             if (e.features && e.features[0]) {
               const blockId = e.features[0].id?.toString() || "";
@@ -166,11 +207,31 @@ export default function BlocksOnboardingWizard() {
               
               setWizardState((prev) => {
                 const isCurrentlySelected = prev.selectedBlocks.includes(blockId);
-                const newBlocks = isCurrentlySelected
-                  ? prev.selectedBlocks.filter((id) => id !== blockId)
-                  : [...prev.selectedBlocks, blockId];
+                
+                // Deselect previously selected block on the map
+                if (prev.selectedBlocks.length > 0 && prev.selectedBlocks[0] !== blockId && map.current) {
+                  const prevBlockId = prev.selectedBlocks[0];
+                  // Find the previous feature to deselect it
+                  const features = map.current.querySourceFeatures("blocks", {
+                    sourceLayer: mapboxConfig.sourceLayer || "blocks"
+                  });
+                  const prevFeature = features.find(f => f.id?.toString() === prevBlockId);
+                  if (prevFeature && prevFeature.id !== undefined) {
+                    map.current.setFeatureState(
+                      { 
+                        source: "blocks", 
+                        sourceLayer: mapboxConfig.sourceLayer || "blocks", 
+                        id: prevFeature.id 
+                      } as any,
+                      { selected: false }
+                    );
+                  }
+                }
 
-                // Update feature state with the new selection status
+                // Toggle or select the clicked block
+                const newBlocks = isCurrentlySelected ? [] : [blockId];
+
+                // Update feature state for the clicked block
                 if (map.current && featureId !== undefined) {
                   map.current.setFeatureState(
                     { 
@@ -232,13 +293,15 @@ export default function BlocksOnboardingWizard() {
 
   const handleRestart = () => {
     setCurrentStep("budget");
-    setWizardState({
+    const defaultState = {
       budgetMin: 1500,
       budgetMax: 4000,
       selectedBoroughs: [],
       selectedNeighborhoods: [],
       selectedBlocks: [],
-    });
+    };
+    setWizardState(defaultState);
+    localStorage.setItem("blocksWizardState", JSON.stringify(defaultState));
   };
 
   const handleBack = () => {
@@ -305,7 +368,7 @@ export default function BlocksOnboardingWizard() {
               {currentStep === "map" && (
                 <>
                   <Map className="inline-block w-6 h-6 mr-2" data-testid="icon-map" />
-                  Pick Your Blocks
+                  Pick Your Block
                 </>
               )}
             </CardTitle>
@@ -313,7 +376,7 @@ export default function BlocksOnboardingWizard() {
               {currentStep === "budget" && "What's your monthly rent budget?"}
               {currentStep === "borough" && "Which NYC boroughs interest you?"}
               {currentStep === "neighborhood" && "Select specific neighborhoods to explore"}
-              {currentStep === "map" && "Click on blocks to add them to your search"}
+              {currentStep === "map" && "Click on a block to select it (only one block can be selected)"}
             </CardDescription>
           </CardHeader>
 
@@ -459,7 +522,7 @@ export default function BlocksOnboardingWizard() {
                 {wizardState.selectedBlocks.length > 0 && (
                   <div className="flex items-center gap-2 flex-wrap" data-testid="container-selected-blocks">
                     <span className="text-sm text-muted-foreground" data-testid="text-blocks-label">
-                      Selected blocks:
+                      Selected block:
                     </span>
                     {wizardState.selectedBlocks.map((blockId) => (
                       <Badge key={blockId} variant="secondary" data-testid={`badge-block-${blockId}`}>
@@ -529,7 +592,7 @@ export default function BlocksOnboardingWizard() {
                     <div className="p-4 border rounded-lg" data-testid="summary-blocks">
                       <div className="flex items-center gap-2 mb-2">
                         <Map className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">Selected Blocks</span>
+                        <span className="text-sm font-medium">Selected Block</span>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {wizardState.selectedBlocks.map((blockId) => (
