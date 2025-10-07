@@ -118,10 +118,18 @@ export default function BlocksOnboardingWizard() {
       map.current.on("load", () => {
         // Add blocks layer if tiles URL is available
         if (mapboxConfig.tilesUrl && map.current) {
-          map.current.addSource("blocks", {
-            type: "vector",
-            tiles: [mapboxConfig.tilesUrl],
-          });
+          // Use 'url' for Mapbox tileset references, 'tiles' for URL templates
+          const sourceConfig: any = {
+            type: "vector"
+          };
+          
+          if (mapboxConfig.tilesUrl.startsWith("mapbox://")) {
+            sourceConfig.url = mapboxConfig.tilesUrl;
+          } else {
+            sourceConfig.tiles = [mapboxConfig.tilesUrl];
+          }
+          
+          map.current.addSource("blocks", sourceConfig);
 
           map.current.addLayer({
             id: "blocks-fill",
