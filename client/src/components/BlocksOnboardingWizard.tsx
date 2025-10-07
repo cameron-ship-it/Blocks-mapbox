@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { boroughs, type Borough, type Neighborhood } from "@/lib/geo";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, ChevronLeft, DollarSign, MapPin, Building2, Map } from "lucide-react";
+import { ChevronRight, ChevronLeft, DollarSign, MapPin, Building2, Map, X } from "lucide-react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
@@ -254,6 +254,46 @@ export default function BlocksOnboardingWizard() {
     const currentIndex = steps.indexOf(currentStep);
     if (currentIndex > 0) {
       setCurrentStep(steps[currentIndex - 1]);
+    }
+  };
+
+  const handleRemoveBlock = (blockId: string) => {
+    if (map.current && mapboxConfig?.sourceLayer) {
+      const sourceLayer = mapboxConfig.sourceLayer || "blocks";
+      const numericId = Number(blockId);
+      const id = isNaN(numericId) ? blockId : numericId;
+      
+      map.current.setFeatureState(
+        { source: "blocks", sourceLayer: sourceLayer, id },
+        { selected: false }
+      );
+      
+      setWizardState((prev) => {
+        const next = new Set(prev.selectedBlocks);
+        next.delete(blockId);
+        return { ...prev, selectedBlocks: next };
+      });
+    }
+  };
+
+  const handleClearAllBlocks = () => {
+    if (map.current && mapboxConfig?.sourceLayer) {
+      const sourceLayer = mapboxConfig.sourceLayer || "blocks";
+      
+      wizardState.selectedBlocks.forEach((blockId) => {
+        const numericId = Number(blockId);
+        const id = isNaN(numericId) ? blockId : numericId;
+        
+        map.current?.setFeatureState(
+          { source: "blocks", sourceLayer: sourceLayer, id },
+          { selected: false }
+        );
+      });
+      
+      setWizardState((prev) => ({
+        ...prev,
+        selectedBlocks: new Set<string>(),
+      }));
     }
   };
 
