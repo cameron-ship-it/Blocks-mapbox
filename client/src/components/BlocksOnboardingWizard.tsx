@@ -138,13 +138,21 @@ export default function BlocksOnboardingWizard() {
             "source-layer": mapboxConfig.sourceLayer || "blocks",
             paint: {
               "fill-color": "#627BC1",
-              "fill-opacity": [
-                "case",
-                ["boolean", ["feature-state", "selected"], false],
-                0.8,
-                0.3,
-              ],
+              "fill-opacity": 0.3,
             },
+          });
+          
+          // Add a separate layer for selected blocks
+          map.current.addLayer({
+            id: "blocks-fill-selected",
+            type: "fill",
+            source: "blocks",
+            "source-layer": mapboxConfig.sourceLayer || "blocks",
+            paint: {
+              "fill-color": "#627BC1",
+              "fill-opacity": 0.8,
+            },
+            filter: ["in", ["id"], ["literal", []]], // Start with empty selection
           });
 
           map.current.addLayer({
@@ -161,8 +169,15 @@ export default function BlocksOnboardingWizard() {
           // Handle block clicks
           map.current.on("click", "blocks-fill", (e) => {
             if (e.features && e.features[0]) {
-              const blockId = e.features[0].id?.toString() || "";
-              const featureId = e.features[0].id;
+              const feature = e.features[0];
+              const featureId = feature.id;
+              
+              if (featureId === undefined || featureId === null) {
+                console.warn("Block has no ID, cannot select");
+                return;
+              }
+              
+              const blockId = featureId.toString();
               
               setWizardState((prev) => {
                 const isCurrentlySelected = prev.selectedBlocks.includes(blockId);
@@ -170,16 +185,19 @@ export default function BlocksOnboardingWizard() {
                   ? prev.selectedBlocks.filter((id) => id !== blockId)
                   : [...prev.selectedBlocks, blockId];
 
-                // Update feature state with the new selection status
-                if (map.current && featureId !== undefined) {
-                  map.current.setFeatureState(
-                    { 
-                      source: "blocks", 
-                      sourceLayer: mapboxConfig.sourceLayer || "blocks", 
-                      id: featureId 
-                    } as any,
-                    { selected: !isCurrentlySelected }
-                  );
+                // Update the selected blocks layer filter
+                if (map.current) {
+                  // Convert string IDs to numbers if they're numeric
+                  const numericIds = newBlocks.map(id => {
+                    const num = Number(id);
+                    return isNaN(num) ? id : num;
+                  });
+                  
+                  map.current.setFilter("blocks-fill-selected", [
+                    "in",
+                    ["id"],
+                    ["literal", numericIds]
+                  ]);
                 }
 
                 return { ...prev, selectedBlocks: newBlocks };
