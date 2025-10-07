@@ -464,12 +464,12 @@ export default function BlocksOnboardingWizard() {
                     <p className="mt-1">Set <code className="text-xs bg-background px-1 py-0.5 rounded">VITE_BLOCKS_TILES</code> environment variable to enable clickable blocks.</p>
                   </div>
                 )}
-                {wizardState.selectedBlocks.length > 0 && (
+                {wizardState.selectedBlocks.size > 0 && (
                   <div className="flex items-center gap-2 flex-wrap" data-testid="container-selected-blocks">
                     <span className="text-sm text-muted-foreground" data-testid="text-blocks-label">
                       Selected blocks:
                     </span>
-                    {wizardState.selectedBlocks.map((blockId) => (
+                    {Array.from(wizardState.selectedBlocks).map((blockId) => (
                       <Badge key={blockId} variant="secondary" data-testid={`badge-block-${blockId}`}>
                         {blockId}
                       </Badge>
@@ -533,14 +533,14 @@ export default function BlocksOnboardingWizard() {
                     </div>
                   </div>
 
-                  {wizardState.selectedBlocks.length > 0 && (
+                  {wizardState.selectedBlocks.size > 0 && (
                     <div className="p-4 border rounded-lg" data-testid="summary-blocks">
                       <div className="flex items-center gap-2 mb-2">
                         <Map className="w-4 h-4 text-muted-foreground" />
                         <span className="text-sm font-medium">Selected Blocks</span>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        {wizardState.selectedBlocks.map((blockId) => (
+                        {Array.from(wizardState.selectedBlocks).map((blockId) => (
                           <Badge key={blockId} variant="secondary" data-testid={`summary-badge-block-${blockId}`}>
                             {blockId}
                           </Badge>
