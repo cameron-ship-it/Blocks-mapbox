@@ -258,7 +258,7 @@ export default function BlocksOnboardingWizard() {
   };
 
   const handleRemoveBlock = (blockId: string) => {
-    if (map.current && mapboxConfig?.sourceLayer) {
+    if (map.current && mapboxConfig) {
       const sourceLayer = mapboxConfig.sourceLayer || "blocks";
       const numericId = Number(blockId);
       const id = isNaN(numericId) ? blockId : numericId;
@@ -277,7 +277,7 @@ export default function BlocksOnboardingWizard() {
   };
 
   const handleClearAllBlocks = () => {
-    if (map.current && mapboxConfig?.sourceLayer) {
+    if (map.current && mapboxConfig) {
       const sourceLayer = mapboxConfig.sourceLayer || "blocks";
       
       wizardState.selectedBlocks.forEach((blockId) => {
