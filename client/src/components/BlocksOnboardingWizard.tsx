@@ -171,13 +171,31 @@ export default function BlocksOnboardingWizard() {
             if (e.features && e.features[0]) {
               const feature = e.features[0];
               const featureId = feature.id;
+              const properties = feature.properties;
               
-              if (featureId === undefined || featureId === null) {
-                console.warn("Block has no ID, cannot select");
-                return;
+              console.log("Clicked block details:", { 
+                id: featureId, 
+                properties: properties,
+                geometry: feature.geometry?.type 
+              });
+              
+              // Try to get a unique identifier from the feature
+              let blockId: string;
+              
+              if (featureId !== undefined && featureId !== null) {
+                blockId = featureId.toString();
+              } else if (properties && properties.id) {
+                blockId = properties.id.toString();
+              } else if (properties && properties.GEOID) {
+                blockId = properties.GEOID.toString();
+              } else {
+                console.warn("Block has no usable ID in id or properties:", properties);
+                // Create a pseudo-ID from coordinates as last resort
+                const coords = JSON.stringify(feature.geometry);
+                blockId = `block_${coords.substring(0, 50)}`;
               }
               
-              const blockId = featureId.toString();
+              console.log("Using blockId:", blockId);
               
               setWizardState((prev) => {
                 const isCurrentlySelected = prev.selectedBlocks.includes(blockId);
@@ -185,18 +203,30 @@ export default function BlocksOnboardingWizard() {
                   ? prev.selectedBlocks.filter((id) => id !== blockId)
                   : [...prev.selectedBlocks, blockId];
 
+                console.log("Selected blocks:", newBlocks);
+
                 // Update the selected blocks layer filter
-                if (map.current) {
+                if (map.current && featureId !== undefined && featureId !== null) {
                   // Convert string IDs to numbers if they're numeric
                   const numericIds = newBlocks.map(id => {
                     const num = Number(id);
                     return isNaN(num) ? id : num;
                   });
                   
+                  console.log("Setting filter with IDs:", numericIds);
+                  
                   map.current.setFilter("blocks-fill-selected", [
                     "in",
                     ["id"],
                     ["literal", numericIds]
+                  ]);
+                } else if (map.current && properties?.id) {
+                  // Try using property-based filter
+                  const propIds = newBlocks;
+                  map.current.setFilter("blocks-fill-selected", [
+                    "in",
+                    ["get", "id"],
+                    ["literal", propIds]
                   ]);
                 }
 
