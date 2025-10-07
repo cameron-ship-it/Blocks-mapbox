@@ -23,7 +23,7 @@ interface WizardState {
   budgetMax: number;
   selectedBoroughs: string[];
   selectedNeighborhoods: string[];
-  selectedBlocks: string[];
+  selectedBlocks: Set<string>;
 }
 
 export default function BlocksOnboardingWizard() {
@@ -33,7 +33,7 @@ export default function BlocksOnboardingWizard() {
     budgetMax: 4000,
     selectedBoroughs: [],
     selectedNeighborhoods: [],
-    selectedBlocks: [],
+    selectedBlocks: new Set<string>(),
   });
 
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -120,7 +120,8 @@ export default function BlocksOnboardingWizard() {
         if (mapboxConfig.tilesUrl && map.current) {
           // Use 'url' for Mapbox tileset references, 'tiles' for URL templates
           const sourceConfig: any = {
-            type: "vector"
+            type: "vector",
+            promoteId: "block_id"
           };
           
           if (mapboxConfig.tilesUrl.startsWith("mapbox://")) {
@@ -137,22 +138,14 @@ export default function BlocksOnboardingWizard() {
             source: "blocks",
             "source-layer": mapboxConfig.sourceLayer || "blocks",
             paint: {
-              "fill-color": "#627BC1",
-              "fill-opacity": 0.3,
+              "fill-color": [
+                "case",
+                ["boolean", ["feature-state", "selected"], false],
+                "#2563eb",
+                "#cbd5e1"
+              ],
+              "fill-opacity": 0.55,
             },
-          });
-          
-          // Add a separate layer for selected blocks
-          map.current.addLayer({
-            id: "blocks-fill-selected",
-            type: "fill",
-            source: "blocks",
-            "source-layer": mapboxConfig.sourceLayer || "blocks",
-            paint: {
-              "fill-color": "#627BC1",
-              "fill-opacity": 0.8,
-            },
-            filter: ["in", ["id"], ["literal", []]], // Start with empty selection
           });
 
           map.current.addLayer({
@@ -178,29 +171,26 @@ export default function BlocksOnboardingWizard() {
               }
               
               const blockId = featureId.toString();
+              const key = { 
+                source: "blocks", 
+                sourceLayer: mapboxConfig.sourceLayer || "blocks", 
+                id: featureId 
+              };
               
               setWizardState((prev) => {
-                const isCurrentlySelected = prev.selectedBlocks.includes(blockId);
-                const newBlocks = isCurrentlySelected
-                  ? prev.selectedBlocks.filter((id) => id !== blockId)
-                  : [...prev.selectedBlocks, blockId];
-
-                // Update the selected blocks layer filter
-                if (map.current) {
-                  // Convert string IDs to numbers if they're numeric
-                  const numericIds = newBlocks.map(id => {
-                    const num = Number(id);
-                    return isNaN(num) ? id : num;
-                  });
-                  
-                  map.current.setFilter("blocks-fill-selected", [
-                    "in",
-                    ["id"],
-                    ["literal", numericIds]
-                  ]);
+                const next = new Set(prev.selectedBlocks);
+                if (next.has(blockId)) {
+                  next.delete(blockId);
+                  if (map.current) {
+                    map.current.setFeatureState(key, { selected: false });
+                  }
+                } else {
+                  next.add(blockId);
+                  if (map.current) {
+                    map.current.setFeatureState(key, { selected: true });
+                  }
                 }
-
-                return { ...prev, selectedBlocks: newBlocks };
+                return { ...prev, selectedBlocks: next };
               });
             }
           });
@@ -255,7 +245,7 @@ export default function BlocksOnboardingWizard() {
       budgetMax: 4000,
       selectedBoroughs: [],
       selectedNeighborhoods: [],
-      selectedBlocks: [],
+      selectedBlocks: new Set<string>(),
     });
   };
 
