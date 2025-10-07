@@ -1,0 +1,53 @@
+You are a senior frontend engineer. Create a modern, professional NYC apartment search app named “blocks” in Next.js 14 (App Router) with TypeScript, Tailwind CSS, and Mapbox GL JS.
+
+GOALS
+- Clean 4-step wizard: (1) Budget range → (2) Borough single-select → (3) Neighborhood multi-select → (4) Map page where users click polygons in my custom blocks layer to select/deselect city blocks.
+- Minimal, professional UI. Tailwind only. Keyboard accessible. Mobile friendly.
+- All configurable via env vars for my Mapbox token and layer/tiles.
+
+STACK
+- Next.js 14 (App Router) + TypeScript
+- Tailwind CSS
+- mapbox-gl (no React wrapper)
+
+SETUP & FILES
+1) Initialize a Next.js 14 TypeScript project in this Replit workspace named “blocks”.
+2) Add Tailwind with sensible defaults (rounded-2xl cards, soft borders, subtle shadows). Include base styles in app/globals.css and Tailwind config.
+3) Install: mapbox-gl
+4) Create .env.local with placeholders:
+   NEXT_PUBLIC_MAPBOX_TOKEN=REPLACE_ME
+   NEXT_PUBLIC_MAP_STYLE=mapbox://styles/mapbox/light-v11
+   # If I host my own blocks tiles, I’ll fill this in. Otherwise leave empty to rely on the style:
+   NEXT_PUBLIC_BLOCKS_TILES=
+   NEXT_PUBLIC_BLOCKS_SOURCE=blocks
+   NEXT_PUBLIC_BLOCKS_LAYER=blocks-fill
+   NEXT_PUBLIC_BLOCKS_SOURCE_LAYER=blocks-fill
+
+5) Create app/page.tsx that renders a single component <BlocksOnboardingWizard /> from /components/BlocksOnboardingWizard.tsx.
+   - DO NOT inline the component here. Create the file and import it.
+   - I will paste the component code into /components/BlocksOnboardingWizard.tsx myself after you create the file.
+
+6) In /components/BlocksOnboardingWizard.tsx create an empty TypeScript React component stub with a default export and a comment saying “PASTE COMPONENT HERE”.
+   - It must compile even before I paste the real code (e.g., temporary placeholder UI that says “Paste BlocksOnboardingWizard here”).
+
+7) Provide a minimal data model:
+   - Hardcode boroughs: Manhattan, Brooklyn, Queens, Bronx, Staten Island
+   - For each borough, stub a few neighborhoods (this will be unused in the stub, but leave the array in a separate file /lib/geo.ts for when I paste the real component)
+
+8) In README.md include clear instructions:
+   - How to set NEXT_PUBLIC_MAPBOX_TOKEN in .env.local
+   - How to run: “npm run dev”
+   - Where to paste my real component: /components/BlocksOnboardingWizard.tsx (replace the stub with my code)
+   - How to configure the env vars if my blocks vector layer is already in my Mapbox style vs. when I have a raw vector tiles template
+
+9) Quality:
+   - TypeScript strict.
+   - App Router structure.
+   - ESLint/Prettier defaults.
+   - No secrets hardcoded.
+   - Mobile responsive.
+
+AFTER SCAFFOLDING
+- Print the exact file tree you created.
+- Print the exact commands I need to run (if any).
+- Confirm that the dev server should show a placeholder page with a heading and a note telling me to paste the real BlocksOnboardingWizard into /components/BlocksOnboardingWizard.tsx.
