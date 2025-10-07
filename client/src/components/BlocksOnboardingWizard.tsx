@@ -178,6 +178,22 @@ export default function BlocksOnboardingWizard() {
             });
           }
 
+          // Helper function to update paint property with current selections
+          const updateBlockColors = () => {
+            if (!map.current) return;
+            
+            const selectedArray = Array.from(selectedIds.current).map(String);
+            const getIdAsString = ["to-string", ["coalesce", ["id"], ["get", "block_id"]]];
+            const selectedLiteral = ["literal", selectedArray];
+            
+            map.current.setPaintProperty(LAYER_ID, "fill-color", [
+              "case",
+              ["in", getIdAsString, selectedLiteral],
+              "#2563eb",
+              "#cbd5e1"
+            ]);
+          };
+
           // Handle block clicks
           map.current.on("click", LAYER_ID, (e) => {
             const f = map.current?.queryRenderedFeatures(e.point, { layers: [LAYER_ID] })?.[0];
@@ -194,23 +210,25 @@ export default function BlocksOnboardingWizard() {
             const id = typeof rawId === "number" ? rawId : String(rawId);
             console.log("clicked id:", rawId, "normalized:", id, "layer:", LAYER_SOURCE_LAYER);
 
-            const key = { source: LAYER_SOURCE, sourceLayer: LAYER_SOURCE_LAYER, id };
+            const idStr = String(id);
+            
+            // Toggle selection
+            if (selectedIds.current.has(idStr)) {
+              selectedIds.current.delete(idStr);
+            } else {
+              selectedIds.current.add(idStr);
+            }
+            
+            // Update paint property to reflect new selections
+            updateBlockColors();
 
+            // Update React state
             setWizardState((prev) => {
               const next = new Set(prev.selectedBlocks);
-              const idStr = String(id);
               if (next.has(idStr)) {
                 next.delete(idStr);
-                selectedIds.current.delete(idStr);
-                if (map.current) {
-                  map.current.setFeatureState(key, { selected: false });
-                }
               } else {
                 next.add(idStr);
-                selectedIds.current.add(idStr);
-                if (map.current) {
-                  map.current.setFeatureState(key, { selected: true });
-                }
               }
               return { ...prev, selectedBlocks: next };
             });
@@ -260,16 +278,17 @@ export default function BlocksOnboardingWizard() {
   };
 
   const handleRestart = () => {
-    // Clear feature states when restarting
+    // Clear selections when restarting
     if (map.current && mapboxConfig) {
-      const sourceLayer = mapboxConfig.sourceLayer || "blocks";
-      selectedIds.current.forEach((id) => {
-        map.current?.setFeatureState(
-          { source: LAYER_SOURCE, sourceLayer: sourceLayer, id },
-          { selected: false }
-        );
-      });
       selectedIds.current.clear();
+      
+      // Update paint property to reflect empty selection
+      map.current.setPaintProperty(LAYER_ID, "fill-color", [
+        "case",
+        ["in", ["to-string", ["coalesce", ["id"], ["get", "block_id"]]], ["literal", []]],
+        "#2563eb",
+        "#cbd5e1"
+      ]);
     }
     
     setCurrentStep("budget");
@@ -292,15 +311,19 @@ export default function BlocksOnboardingWizard() {
 
   const handleRemoveBlock = (blockId: string) => {
     if (map.current && mapboxConfig) {
-      const sourceLayer = mapboxConfig.sourceLayer || "blocks";
-      const numericId = Number(blockId);
-      const id = isNaN(numericId) ? blockId : numericId;
+      selectedIds.current.delete(blockId);
       
-      map.current.setFeatureState(
-        { source: LAYER_SOURCE, sourceLayer: sourceLayer, id },
-        { selected: false }
-      );
-      selectedIds.current.delete(String(id));
+      // Update paint property to reflect new selections
+      const selectedArray = Array.from(selectedIds.current).map(String);
+      const getIdAsString = ["to-string", ["coalesce", ["id"], ["get", "block_id"]]];
+      const selectedLiteral = ["literal", selectedArray];
+      
+      map.current.setPaintProperty(LAYER_ID, "fill-color", [
+        "case",
+        ["in", getIdAsString, selectedLiteral],
+        "#2563eb",
+        "#cbd5e1"
+      ]);
       
       setWizardState((prev) => {
         const next = new Set(prev.selectedBlocks);
@@ -312,19 +335,15 @@ export default function BlocksOnboardingWizard() {
 
   const handleClearAllBlocks = () => {
     if (map.current && mapboxConfig) {
-      const sourceLayer = mapboxConfig.sourceLayer || "blocks";
-      
-      wizardState.selectedBlocks.forEach((blockId) => {
-        const numericId = Number(blockId);
-        const id = isNaN(numericId) ? blockId : numericId;
-        
-        map.current?.setFeatureState(
-          { source: LAYER_SOURCE, sourceLayer: sourceLayer, id },
-          { selected: false }
-        );
-      });
-      
       selectedIds.current.clear();
+      
+      // Update paint property to reflect empty selection
+      map.current.setPaintProperty(LAYER_ID, "fill-color", [
+        "case",
+        ["in", ["to-string", ["coalesce", ["id"], ["get", "block_id"]]], ["literal", []]],
+        "#2563eb",
+        "#cbd5e1"
+      ]);
       
       setWizardState((prev) => ({
         ...prev,
