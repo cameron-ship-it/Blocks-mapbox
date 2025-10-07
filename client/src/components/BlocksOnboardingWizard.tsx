@@ -81,6 +81,18 @@ export default function BlocksOnboardingWizard() {
   // Initialize Mapbox map
   useEffect(() => {
     if (currentStep === "map" && mapContainer.current && mapboxConfig?.token && !map.current) {
+      // WebGL diagnostics
+      console.log("Mapbox supported:", mapboxgl.supported());
+      const canvas = document.createElement("canvas");
+      const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+      console.log("WebGL context:", !!gl);
+
+      // Check if Mapbox is supported
+      if (!mapboxgl.supported({ failIfMajorPerformanceCaveat: true })) {
+        setMapError('WebGL not supported in this environment. Please open the app in a new browser tab and enable hardware acceleration.');
+        return;
+      }
+
       try {
         mapboxgl.accessToken = mapboxConfig.token;
         setMapError(null);
@@ -420,7 +432,8 @@ export default function BlocksOnboardingWizard() {
                 ) : (
                   <div
                     ref={mapContainer}
-                    className="h-96 w-full rounded-lg border overflow-hidden"
+                    style={{ height: '520px', width: '100%', borderRadius: '16px' }}
+                    className="border overflow-hidden"
                     data-testid="map-container"
                   />
                 )}
