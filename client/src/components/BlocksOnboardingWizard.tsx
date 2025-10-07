@@ -505,15 +505,42 @@ export default function BlocksOnboardingWizard() {
                   </div>
                 )}
                 {wizardState.selectedBlocks.size > 0 && (
-                  <div className="flex items-center gap-2 flex-wrap" data-testid="container-selected-blocks">
-                    <span className="text-sm text-muted-foreground" data-testid="text-blocks-label">
-                      Selected blocks:
-                    </span>
-                    {Array.from(wizardState.selectedBlocks).map((blockId) => (
-                      <Badge key={blockId} variant="secondary" data-testid={`badge-block-${blockId}`}>
-                        {blockId}
-                      </Badge>
-                    ))}
+                  <div className="space-y-2" data-testid="container-selected-blocks">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm text-muted-foreground" data-testid="text-blocks-label">
+                        Selected blocks: {wizardState.selectedBlocks.size}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleClearAllBlocks}
+                        data-testid="button-clear-all-blocks"
+                      >
+                        Clear All
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {Array.from(wizardState.selectedBlocks).map((blockId) => (
+                        <Badge 
+                          key={blockId} 
+                          variant="secondary" 
+                          className="pr-1 gap-1"
+                          data-testid={`badge-block-${blockId}`}
+                        >
+                          {blockId}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveBlock(blockId);
+                            }}
+                            className="ml-1 hover:bg-secondary-foreground/20 rounded-sm p-0.5"
+                            data-testid={`button-remove-block-${blockId}`}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
