@@ -19,6 +19,7 @@ export interface NeighborhoodData {
   slug: string;
   bbox: BBox;
   feature: NeighborhoodFeature;
+  geometry: Polygon | MultiPolygon;
 }
 
 export type NeighborhoodsGeoJSON = FeatureCollection<Polygon | MultiPolygon, NeighborhoodProperties>;
@@ -74,7 +75,8 @@ export function processNeighborhoods(geojson: NeighborhoodsGeoJSON): Map<string,
       name: ntaName,
       slug,
       bbox,
-      feature
+      feature,
+      geometry: feature.geometry
     });
   });
 

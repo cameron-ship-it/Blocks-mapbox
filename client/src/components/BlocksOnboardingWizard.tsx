@@ -286,26 +286,94 @@ export default function BlocksOnboardingWizard() {
   };
 
   const handleInvert = () => {
-    selectionStore.current.invert();
-    
-    // Update feature-state on all blocks
-    if (map.current) {
-      const selected = selectionStore.current.getSelected();
-      // Note: Inverting requires knowing all block IDs, which we don't have easily accessible
-      // For now, this is a placeholder
-      console.log('Invert selection:', selected.size, 'blocks selected');
+    if (!map.current) {
+      console.warn('Map not initialized, cannot invert selection');
+      return;
+    }
+
+    try {
+      // Query all block features from the map source
+      const features = map.current.querySourceFeatures(LAYER_SOURCE, {
+        sourceLayer: mapboxConfig.sourceLayer
+      });
+
+      if (features.length === 0) {
+        console.warn('No block features found, source may not be loaded');
+        return;
+      }
+
+      // Extract all block IDs
+      const allBlockIds = features
+        .map(f => {
+          const id = f.id ?? f.properties?.block_id ?? f.properties?.GEOID;
+          return id ? String(id) : null;
+        })
+        .filter((id): id is string => id !== null);
+
+      console.log(`Inverting selection with ${allBlockIds.length} total blocks`);
+
+      // Get current selection before inverting
+      const previousSelection = selectionStore.current.getSelected();
+
+      // Invert selection in store
+      selectionStore.current.invert(allBlockIds);
+
+      // Update feature-state on map
+      const newSelection = selectionStore.current.getSelected();
+
+      // Clear previously selected blocks
+      previousSelection.forEach(blockId => {
+        if (!newSelection.has(blockId)) {
+          const fid = !isNaN(Number(blockId)) ? Number(blockId) : blockId;
+          map.current?.setFeatureState(
+            { source: LAYER_SOURCE, sourceLayer: mapboxConfig.sourceLayer, id: fid },
+            { selected: false }
+          );
+        }
+      });
+
+      // Set newly selected blocks
+      newSelection.forEach(blockId => {
+        if (!previousSelection.has(blockId)) {
+          const fid = !isNaN(Number(blockId)) ? Number(blockId) : blockId;
+          map.current?.setFeatureState(
+            { source: LAYER_SOURCE, sourceLayer: mapboxConfig.sourceLayer, id: fid },
+            { selected: true }
+          );
+        }
+      });
+
+      // Update selectedBlockIds ref
+      selectedBlockIds.current = new Set(newSelection);
+
+    } catch (error) {
+      console.error('Error inverting selection:', error);
     }
   };
 
   const handleClearAll = () => {
-    selectionStore.current.clear();
-    
-    // Clear feature-state on map
-    if (map.current) {
-      // Note: We need to clear feature-state for all previously selected blocks
-      // For now, just clear the store and let reapplySelections handle it on next render
-      selectedBlockIds.current.clear();
+    if (!map.current) {
+      selectionStore.current.clearAll();
+      return;
     }
+
+    // Get current selection before clearing
+    const previousSelection = selectionStore.current.getSelected();
+
+    // Clear selection in store
+    selectionStore.current.clearAll();
+
+    // Clear feature-state on map for all previously selected blocks
+    previousSelection.forEach(blockId => {
+      const fid = !isNaN(Number(blockId)) ? Number(blockId) : blockId;
+      map.current?.setFeatureState(
+        { source: LAYER_SOURCE, sourceLayer: mapboxConfig.sourceLayer, id: fid },
+        { selected: false }
+      );
+    });
+
+    // Clear selectedBlockIds ref
+    selectedBlockIds.current.clear();
   };
 
   const handleModeChange = (mode: 'include' | 'exclude') => {

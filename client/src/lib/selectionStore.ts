@@ -50,6 +50,16 @@ export class SelectionStore {
     this.notifyListeners();
   }
 
+  add(id: string): void {
+    this.selected.add(id);
+    this.notifyListeners();
+  }
+
+  selectMany(ids: string[]): void {
+    ids.forEach(id => this.selected.add(id));
+    this.notifyListeners();
+  }
+
   selectAll(ids: string[]): void {
     ids.forEach(id => this.selected.add(id));
     this.notifyListeners();
