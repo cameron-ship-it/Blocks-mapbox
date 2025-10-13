@@ -1,0 +1,161 @@
+You are a senior front-end engineer. Audit this repository and refactor the UI to a polished Blocks NYC experience. Keep all existing business logic and data flow intact. Improve only the presentation layer and component structure unless a small change is required for UX quality.
+
+Product intent
+
+Blocks NYC is a modern apartment search flow for Manhattan. The experience must feel clean, confident, and fast. The visual language should read like an architectural studio site with subtle motion and high legibility.
+
+Tech stack targets
+	•	Keep current framework. If React with Vite, keep it. If Next 14, keep it.
+	•	Use Tailwind CSS for styling. Add shadcn/ui and Framer Motion for components and motion.
+	•	Support dark mode toggle but default to light.
+	•	Zero breaking changes to routes or API.
+
+Branding system
+
+Create a central theme in src/theme/theme.ts and Tailwind tokens.
+
+Colors
+	•	Ink: #0A0A0A
+	•	Ink-2: #111111
+	•	Charcoal: #1E1E1E
+	•	Gray-1: #F5F5F5
+	•	Gray-2: #EDEDED
+	•	Gray-3: #DCDCDC
+	•	Accent: #3D8BFF  (primary interactive)
+	•	Accent-2: #FF6B6B (alerts and destructive)
+	•	Success: #16A34A
+	•	Warning: #F59E0B
+	•	Text-primary: #0A0A0A
+	•	Text-secondary: #525252
+	•	Border: #E5E7EB
+
+Typography
+	•	Family: Inter and DM Sans (load both, prefer Inter)
+	•	h1: 32/36, 700
+	•	h2: 24/28, 700
+	•	h3: 20/24, 600
+	•	body: 16/24, 400
+	•	label: 14/20, 500
+	•	number: tabular-nums enabled
+
+Radii and elevation
+	•	Radius: 16px default, 24px for cards and modals
+	•	Shadows: soft layered. Provide tokens shadow-card, shadow-popover
+
+Motion
+	•	Use Framer Motion. Duration 180–220 ms for most transitions. Ease easeInOut
+	•	Page transition: fade in with slight upward translate 8px
+	•	Hover micro interaction: scale 1.02 on primary buttons
+
+Global layout
+
+Refactor src/app/layout.tsx or src/App.tsx to include:
+	•	Top nav with Blocks NYC wordmark on left, step indicator center, Help link on right
+	•	Container width max 960px on desktop, 20px gutters on mobile
+	•	Footer with small type, links to About, Privacy, and a discreet dark mode toggle
+
+Reusable components (create under src/components/ui)
+	1.	PrimaryButton.tsx
+	•	Variants: primary, secondary, ghost, destructive
+	•	Sizes: sm, md, lg
+	•	Loading state with spinner
+	•	Full width option
+	2.	Card.tsx
+	•	Padded card with header, subheader, content, actions slots
+	3.	ProgressStepper.tsx
+	•	Horizontal bar with 4 steps: Budget, Borough, Neighborhood, Blocks, Review
+	•	Current step highlighted in Accent, completed in Ink, future in Gray-3
+	•	Accepts currentStep and onStepClick
+	4.	RangeSlider.tsx (dual handle)
+	•	Props: min, max, step, value, onChange, formatValue
+	•	Handles with numeric chips above each thumb
+	•	Track uses gradient from Ink to Accent behind selected range
+	•	Keyboard accessible. ARIA labels.
+	5.	FormHint.tsx
+	•	Small helper text with optional info tooltip
+	6.	Badge.tsx
+	•	For selected neighborhoods and blocks
+	7.	EmptyState.tsx
+	•	Icon, title, description, action
+	8.	Toast.tsx
+	•	Use shadcn toast. Provide helpers toast.success, toast.error
+	9.	Skeleton.tsx
+	•	For loading shimmer bars and cards
+
+Specific page refactors
+
+Refactor pages to use the shared components and consistent spacing. Use the same card canvas on every step.
+
+1) Budget page
+	•	Title: Set your budget
+	•	Subtitle: What is your monthly rent budget
+	•	Use RangeSlider with default [1500, 4000] and step 50
+	•	Live values at right of the slider as $1,500 – $4,000
+	•	Add hint: “Consider utilities and amenities in your range”
+	•	Primary Next button on the right. Back as ghost on left
+	•	Validate min less than max and show helpful error if not
+
+2) Borough selection
+	•	Grid of 5 cards with borough names and short blurbs
+	•	Selectable cards with checkmark overlay
+	•	Allow single or multiple if your flow supports it. Default single
+	•	Keyboard support. Enter selects. Space toggles
+
+3) Neighborhood selection
+	•	Multi select with search input
+	•	Use Badge pills for selected items under the grid
+	•	Show count selected. Example “Selected 3”
+	•	Include “Clear all” link
+
+4) Map and blocks step
+	•	Integrate the existing Mapbox layer. Do not change data model
+	•	Fix the bug where selecting one block selects all. Make selection state per feature id in local state
+	•	A selected block should glow with Accent outline at 2px and 30 percent fill
+	•	Add mini legend. Selected, Available, Not available
+	•	Add sticky footer with summary: “Borough: X • Neighborhoods: Y • Blocks: Z” and Next button
+	•	Debounce map hover tooltips. Show block id and average rent if available
+
+5) Review and results
+	•	Summarize chosen range, boroughs, neighborhoods, blocks
+	•	Provide an editable chip group. Clicking a chip jumps back to that step
+	•	Use EmptyState if no results or invalid flow
+
+Accessibility
+	•	All interactive elements have focus states using outline-offset-2 and Accent color
+	•	All components accept aria-label and aria-describedby
+	•	Contrast AA or better
+
+Tailwind config updates
+	•	Add font families, new color tokens, shadows, radii
+	•	Enable tabular-nums utility
+	•	Add container defaults center: true, padding: 20px
+
+File tasks
+	•	Create the UI components listed above
+	•	Replace ad-hoc buttons and sliders with the reusable components
+	•	Add src/theme/theme.ts and export tokens
+	•	Add a useStep() hook in src/hooks/useStep.ts that controls step position and exposes next, back, goTo, and a guarded transition that validates the current step before moving forward
+	•	Add src/components/layout/AppShell.tsx that wraps pages with header, stepper, footer
+	•	Ensure pages import AppShell and pass currentStep
+
+Known bugs to fix
+	•	Dual handle slider jumps when values cross. Prevent crossing by clamping handles
+	•	Block selection selects all. Use feature id specific state. Example state shape:
+{[featureId: string]: boolean}
+	•	Page scroll reset on step change. Scroll to top on mount of each step
+
+QA checklist
+	•	Keyboard only run through entire flow
+	•	Mobile width 360 and 390. Tablet 768. Desktop 1280
+	•	Dark mode readability for slider labels and chips
+	•	Stepper reflects progress across route reloads if query has ?step=
+	•	No layout shift during value updates
+	•	Lighthouse performance and a11y scores at or above 95 on Budget and Map steps
+
+Deliverables
+	•	Merge request with the new components and theme
+	•	Updated pages wired to the shared components
+	•	Short README section “Blocks NYC UI System” that documents tokens and usage
+	•	Before and after screenshots for Budget and Map steps
+
+Apply all changes now. Keep commits atomic with clear messages. Do not remove existing business logic. If something is ambiguous, choose the option that improves UX and keeps current behavior stable.
