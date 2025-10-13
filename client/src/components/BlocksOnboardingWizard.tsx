@@ -309,70 +309,89 @@ export default function BlocksOnboardingWizard() {
               console.log('No tiles URL configured, skipping custom layer');
             }
             
-            // Handle block clicks with proper feature-specific state  
-            map.current.on("click", LAYER_ID, (e) => {
-              const features = map.current?.queryRenderedFeatures(e.point, { layers: [LAYER_ID] });
-              console.log('Click event - features found:', features?.length);
+            const toggleFeature = (fid: string | number) => {
+              const selected = selectedBlockIds.current.has(String(fid));
+              const fidString = String(fid);
               
-              if (!features || features.length === 0) {
-                console.log('No features found at click point');
-                return;
-              }
-
-              const feature = features[0];
-              console.log('Feature clicked:', {
-                id: feature.id,
-                properties: feature.properties,
-                hasBlockId: 'block_id' in (feature.properties || {})
-              });
-              
-              const rawId = feature.id ?? feature.properties?.block_id;
-              console.log('Extracted ID:', rawId);
-              
-              if (rawId === undefined || rawId === null) {
-                console.warn('Feature has no ID! Cannot set feature state.');
-                return;
-              }
-
-              const id = String(rawId);
-
-              // Toggle selection
-              const isSelected = selectedBlockIds.current.has(id);
-              
-              if (isSelected) {
-                selectedBlockIds.current.delete(id);
-                map.current?.setFeatureState(
-                  { source: LAYER_SOURCE, sourceLayer: LAYER_SOURCE_LAYER, id: rawId },
-                  { selected: false }
-                );
+              if (selected) {
+                selectedBlockIds.current.delete(fidString);
               } else {
-                selectedBlockIds.current.add(id);
-                map.current?.setFeatureState(
-                  { source: LAYER_SOURCE, sourceLayer: LAYER_SOURCE_LAYER, id: rawId },
-                  { selected: true }
+                selectedBlockIds.current.add(fidString);
+              }
+              
+              if (map.current) {
+                map.current.setFeatureState(
+                  { source: LAYER_SOURCE, sourceLayer: LAYER_SOURCE_LAYER, id: fid },
+                  { selected: !selected }
                 );
               }
-
-              // Update React state
+              
               setWizardState((prev) => {
                 const next = new Set(prev.selectedBlocks);
-                if (next.has(id)) {
-                  next.delete(id);
+                if (next.has(fidString)) {
+                  next.delete(fidString);
                 } else {
-                  next.add(id);
+                  next.add(fidString);
                 }
                 return { ...prev, selectedBlocks: next };
               });
-            });
+            };
 
-            // Cursor changes
-            map.current.on("mouseenter", LAYER_ID, () => {
-              if (map.current) map.current.getCanvas().style.cursor = "pointer";
-            });
+            const reapplySelections = () => {
+              if (!map.current) return;
+              
+              Array.from(selectedBlockIds.current).forEach(fid => {
+                if (map.current) {
+                  map.current.setFeatureState(
+                    { source: LAYER_SOURCE, sourceLayer: LAYER_SOURCE_LAYER, id: fid },
+                    { selected: true }
+                  );
+                }
+              });
+            };
 
-            map.current.on("mouseleave", LAYER_ID, () => {
-              if (map.current) map.current.getCanvas().style.cursor = "";
-            });
+            if (map.current) {
+              map.current.on("click", LAYER_ID, (e) => {
+                const features = map.current?.queryRenderedFeatures(e.point, { layers: [LAYER_ID] });
+                console.log('Click event - features found:', features?.length);
+                
+                if (!features || features.length === 0) {
+                  console.log('No features found at click point');
+                  return;
+                }
+
+                const feature = features[0];
+                const fid = String(feature.id ?? feature.properties?.block_id ?? feature.properties?.GEOID ?? '');
+                
+                console.log('Feature clicked:', {
+                  extractedId: fid,
+                  featureId: feature.id,
+                  properties: feature.properties
+                });
+                
+                if (!fid) {
+                  console.warn('Feature has no valid ID! Cannot set feature state.');
+                  return;
+                }
+
+                toggleFeature(fid);
+              });
+
+              map.current.on("sourcedata", (e) => {
+                if (e.sourceId === LAYER_SOURCE && e.isSourceLoaded && selectedBlockIds.current.size > 0) {
+                  console.log('Reapplying selections after source data load');
+                  reapplySelections();
+                }
+              });
+
+              map.current.on("mouseenter", LAYER_ID, () => {
+                if (map.current) map.current.getCanvas().style.cursor = "pointer";
+              });
+
+              map.current.on("mouseleave", LAYER_ID, () => {
+                if (map.current) map.current.getCanvas().style.cursor = "";
+              });
+            }
             
             // Expose map debug info to window for troubleshooting
             if (typeof window !== 'undefined') {

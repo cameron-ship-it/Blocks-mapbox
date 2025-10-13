@@ -53,7 +53,6 @@ export const ProgressStepper: React.FC<ProgressStepperProps> = ({
                 data-testid={`step-${step.id}`}
                 aria-current={isCurrent ? "step" : undefined}
               >
-                {/* Step Circle */}
                 <div
                   className={cn(
                     "flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all",
@@ -70,7 +69,6 @@ export const ProgressStepper: React.FC<ProgressStepperProps> = ({
                   )}
                 </div>
 
-                {/* Step Label */}
                 <span
                   className={cn(
                     "text-xs font-medium transition-colors hidden sm:block",
@@ -83,7 +81,6 @@ export const ProgressStepper: React.FC<ProgressStepperProps> = ({
                 </span>
               </button>
 
-              {/* Connector Line */}
               {index < steps.length - 1 && (
                 <div
                   className={cn(
