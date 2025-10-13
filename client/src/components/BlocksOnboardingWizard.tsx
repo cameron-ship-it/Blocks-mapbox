@@ -211,6 +211,11 @@ export default function BlocksOnboardingWizard() {
 
           map.current.on("load", () => {
             if (mapboxConfig.tilesUrl && map.current) {
+              console.log('Adding custom tiles source:', {
+                tilesUrl: mapboxConfig.tilesUrl,
+                sourceLayer: mapboxConfig.sourceLayer
+              });
+              
               const LAYER_SOURCE_LAYER = mapboxConfig.sourceLayer || "blocks";
               
               const sourceConfig: any = {
@@ -220,55 +225,83 @@ export default function BlocksOnboardingWizard() {
               
               if (mapboxConfig.tilesUrl.startsWith("mapbox://")) {
                 sourceConfig.url = mapboxConfig.tilesUrl;
+                console.log('Using Mapbox tileset URL:', sourceConfig.url);
               } else {
                 sourceConfig.tiles = [mapboxConfig.tilesUrl];
+                console.log('Using custom tiles URL:', sourceConfig.tiles);
               }
               
-              map.current.addSource(LAYER_SOURCE, sourceConfig);
+              try {
+                map.current.addSource(LAYER_SOURCE, sourceConfig);
+                console.log('Source added successfully');
 
-              // Fill layer with Blocks NYC accent color
-              map.current.addLayer({
-                id: LAYER_ID,
-                type: "fill",
-                source: LAYER_SOURCE,
-                "source-layer": LAYER_SOURCE_LAYER,
-                paint: {
-                  "fill-color": [
-                    "case",
-                    ["boolean", ["feature-state", "selected"], false],
-                    "hsl(214, 100%, 62%)", // accent-blue
-                    "hsl(0, 0%, 93%)" // gray-2
-                  ],
-                  "fill-opacity": [
-                    "case",
-                    ["boolean", ["feature-state", "selected"], false],
-                    0.3,
-                    0.6
-                  ],
-                },
-              });
+                // Fill layer with Blocks NYC accent color
+                map.current.addLayer({
+                  id: LAYER_ID,
+                  type: "fill",
+                  source: LAYER_SOURCE,
+                  "source-layer": LAYER_SOURCE_LAYER,
+                  paint: {
+                    "fill-color": [
+                      "case",
+                      ["boolean", ["feature-state", "selected"], false],
+                      "hsl(214, 100%, 62%)", // accent-blue
+                      "hsl(0, 0%, 93%)" // gray-2
+                    ],
+                    "fill-opacity": [
+                      "case",
+                      ["boolean", ["feature-state", "selected"], false],
+                      0.3,
+                      0.6
+                    ],
+                  },
+                });
+                console.log('Fill layer added successfully');
 
-              // Outline layer
-              map.current.addLayer({
-                id: LAYER_LINE_ID,
-                type: "line",
-                source: LAYER_SOURCE,
-                "source-layer": LAYER_SOURCE_LAYER,
-                paint: {
-                  "line-color": [
-                    "case",
-                    ["boolean", ["feature-state", "selected"], false],
-                    "hsl(214, 100%, 62%)", // accent-blue
-                    "hsl(0, 0%, 86%)" // gray-3
-                  ],
-                  "line-width": [
-                    "case",
-                    ["boolean", ["feature-state", "selected"], false],
-                    2,
-                    0.8
-                  ],
-                },
-              });
+                // Outline layer
+                map.current.addLayer({
+                  id: LAYER_LINE_ID,
+                  type: "line",
+                  source: LAYER_SOURCE,
+                  "source-layer": LAYER_SOURCE_LAYER,
+                  paint: {
+                    "line-color": [
+                      "case",
+                      ["boolean", ["feature-state", "selected"], false],
+                      "hsl(214, 100%, 62%)", // accent-blue
+                      "hsl(0, 0%, 86%)" // gray-3
+                    ],
+                    "line-width": [
+                      "case",
+                      ["boolean", ["feature-state", "selected"], false],
+                      2,
+                      0.8
+                    ],
+                  },
+                });
+                console.log('Outline layer added successfully');
+                
+                // Listen for source data events
+                map.current.on('sourcedata', (e) => {
+                  if (e.sourceId === LAYER_SOURCE) {
+                    console.log('Source data event:', {
+                      sourceId: e.sourceId,
+                      isSourceLoaded: e.isSourceLoaded,
+                      tile: e.tile
+                    });
+                  }
+                });
+                
+                // Check if tiles are loading
+                map.current.on('data', (e) => {
+                  if (e.sourceId === LAYER_SOURCE) {
+                    console.log('Data event for blocks source:', e.dataType);
+                  }
+                });
+              } catch (error) {
+                console.error('Error adding source or layers:', error);
+                setMapError('Failed to load block tiles. Please check your tileset configuration.');
+              }
 
               // Handle block clicks with proper feature-specific state
               map.current.on("click", LAYER_ID, (e) => {
