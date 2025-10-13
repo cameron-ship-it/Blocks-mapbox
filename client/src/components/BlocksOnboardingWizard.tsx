@@ -157,7 +157,7 @@ export default function BlocksOnboardingWizard() {
 
         console.log('Initializing Mapbox map...');
         
-        if (!mapboxgl.supported({ failIfMajorPerformanceCaveat: true })) {
+        if (!mapboxgl.supported()) {
           console.error('WebGL not supported');
           setMapError('WebGL not supported. Please open in a new browser tab with hardware acceleration enabled.');
           return;
@@ -657,23 +657,33 @@ export default function BlocksOnboardingWizard() {
                     title="Map not available"
                     description="Mapbox token is not configured. Set MAPBOX_TOKEN to enable the map."
                   />
+                ) : mapError ? (
+                  <div className="space-y-4">
+                    <div className="text-sm text-muted-foreground text-center p-8 bg-muted/30 rounded-lg border-2 border-dashed" data-testid="text-map-unavailable">
+                      <MapIcon className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                      <p className="font-medium mb-2">Map preview unavailable</p>
+                      <p className="text-xs">The interactive map requires WebGL support. You can still proceed with your neighborhood selections.</p>
+                    </div>
+                    {!mapboxConfig.tilesUrl && (
+                      <div className="text-sm text-muted-foreground text-center p-4 bg-muted/50 rounded-lg" data-testid="text-blocks-info">
+                        <p>Interactive block selection requires custom tiles configuration.</p>
+                      </div>
+                    )}
+                  </div>
                 ) : (
-                  <div
-                    ref={mapContainer}
-                    style={{ height: '520px', width: '100%' }}
-                    className="rounded-card overflow-hidden border"
-                    data-testid="map-container"
-                  />
-                )}
-                {mapError && (
-                  <div className="text-sm text-destructive text-center p-4 bg-destructive/10 rounded-lg" data-testid="text-map-error">
-                    {mapError}
-                  </div>
-                )}
-                {!mapboxConfig.tilesUrl && mapboxConfig.token && !mapError && (
-                  <div className="text-sm text-muted-foreground text-center p-4 bg-muted/50 rounded-lg" data-testid="text-blocks-info">
-                    <p>Interactive block selection requires custom tiles configuration.</p>
-                  </div>
+                  <>
+                    <div
+                      ref={mapContainer}
+                      style={{ height: '520px', width: '100%' }}
+                      className="rounded-card overflow-hidden border"
+                      data-testid="map-container"
+                    />
+                    {!mapboxConfig.tilesUrl && (
+                      <div className="text-sm text-muted-foreground text-center p-4 bg-muted/50 rounded-lg" data-testid="text-blocks-info">
+                        <p>Interactive block selection requires custom tiles configuration.</p>
+                      </div>
+                    )}
+                  </>
                 )}
                 
                 {/* Selected Blocks */}
