@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { boroughs, type Borough, type Neighborhood } from "@/lib/geo";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, ChevronLeft, DollarSign, MapPin, Building2, Map, X } from "lucide-react";
+import { ChevronRight, ChevronLeft, MapPin, Building2, Map, X } from "lucide-react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
@@ -389,7 +389,7 @@ export default function BlocksOnboardingWizard() {
             <CardTitle className="text-2xl" data-testid="text-step-title">
               {currentStep === "budget" && (
                 <>
-                  <DollarSign className="inline-block w-6 h-6 mr-2" data-testid="icon-budget" />
+                  <span className="mr-2" data-testid="icon-budget">$</span>
                   Set Your Budget
                 </>
               )}
@@ -619,7 +619,7 @@ export default function BlocksOnboardingWizard() {
                 <div className="space-y-4">
                   <div className="p-4 border rounded-lg" data-testid="summary-budget">
                     <div className="flex items-center gap-2 mb-2">
-                      <DollarSign className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">$</span>
                       <span className="text-sm font-medium">Budget Range</span>
                     </div>
                     <p className="text-lg font-semibold" data-testid="text-summary-budget">
