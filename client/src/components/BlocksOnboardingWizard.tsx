@@ -387,12 +387,7 @@ export default function BlocksOnboardingWizard() {
         <Card data-testid="card-wizard">
           <CardHeader>
             <CardTitle className="text-2xl" data-testid="text-step-title">
-              {currentStep === "budget" && (
-                <>
-                  <span className="mr-2" data-testid="icon-budget">$</span>
-                  Set Your Budget
-                </>
-              )}
+              {currentStep === "budget" && "Set Your Budget"}
               {currentStep === "borough" && (
                 <>
                   <Building2 className="inline-block w-6 h-6 mr-2" data-testid="icon-borough" />
@@ -619,7 +614,6 @@ export default function BlocksOnboardingWizard() {
                 <div className="space-y-4">
                   <div className="p-4 border rounded-lg" data-testid="summary-budget">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-sm text-muted-foreground">$</span>
                       <span className="text-sm font-medium">Budget Range</span>
                     </div>
                     <p className="text-lg font-semibold" data-testid="text-summary-budget">
