@@ -199,14 +199,15 @@ export default function BlocksOnboardingWizard() {
             console.log('Map loaded successfully');
             console.log('Map style loaded:', map.current?.getStyle()?.name);
             
+            // Define source layer outside the conditional so it's accessible to click handlers
+            const LAYER_SOURCE_LAYER = mapboxConfig.sourceLayer || "blocks";
+            
             // Add custom tiles layer
             if (mapboxConfig.tilesUrl && map.current) {
               console.log('Adding custom tiles source:', {
                 tilesUrl: mapboxConfig.tilesUrl,
                 sourceLayer: mapboxConfig.sourceLayer
               });
-              
-              const LAYER_SOURCE_LAYER = mapboxConfig.sourceLayer || "blocks";
               
               const sourceConfig: any = {
                 type: "vector",
