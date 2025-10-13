@@ -149,10 +149,10 @@ export default function BlocksOnboardingWizard() {
               "fill-color": [
                 "case",
                 ["boolean", ["feature-state", "selected"], false],
-                "#2563eb",
-                "#cbd5e1"
+                "#000000",
+                "#e5e5e5"
               ],
-              "fill-opacity": 0.55,
+              "fill-opacity": 0.6,
             },
           });
 
@@ -162,8 +162,8 @@ export default function BlocksOnboardingWizard() {
             source: LAYER_SOURCE,
             "source-layer": LAYER_SOURCE_LAYER,
             paint: {
-              "line-color": "#475569",
-              "line-width": 0.6,
+              "line-color": "#666666",
+              "line-width": 0.8,
             },
           });
 
@@ -189,8 +189,8 @@ export default function BlocksOnboardingWizard() {
             map.current.setPaintProperty(LAYER_ID, "fill-color", [
               "case",
               ["in", getIdAsString, selectedLiteral],
-              "#2563eb",
-              "#cbd5e1"
+              "#000000",
+              "#e5e5e5"
             ]);
           };
 
@@ -286,8 +286,8 @@ export default function BlocksOnboardingWizard() {
       map.current.setPaintProperty(LAYER_ID, "fill-color", [
         "case",
         ["in", ["to-string", ["coalesce", ["id"], ["get", "block_id"]]], ["literal", []]],
-        "#2563eb",
-        "#cbd5e1"
+        "#000000",
+        "#e5e5e5"
       ]);
     }
     
@@ -321,8 +321,8 @@ export default function BlocksOnboardingWizard() {
       map.current.setPaintProperty(LAYER_ID, "fill-color", [
         "case",
         ["in", getIdAsString, selectedLiteral],
-        "#2563eb",
-        "#cbd5e1"
+        "#000000",
+        "#e5e5e5"
       ]);
       
       setWizardState((prev) => {
@@ -341,8 +341,8 @@ export default function BlocksOnboardingWizard() {
       map.current.setPaintProperty(LAYER_ID, "fill-color", [
         "case",
         ["in", ["to-string", ["coalesce", ["id"], ["get", "block_id"]]], ["literal", []]],
-        "#2563eb",
-        "#cbd5e1"
+        "#000000",
+        "#e5e5e5"
       ]);
       
       setWizardState((prev) => ({
