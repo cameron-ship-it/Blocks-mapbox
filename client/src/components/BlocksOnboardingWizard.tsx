@@ -195,21 +195,11 @@ export default function BlocksOnboardingWizard() {
           });
           
           map.current.on('load', () => {
+            console.log('=== MAP LOAD EVENT FIRED ===');
             console.log('Map loaded successfully');
             console.log('Map style loaded:', map.current?.getStyle()?.name);
-          });
-          
-          map.current.on('styledata', () => {
-            console.log('Map style data loaded');
-          });
-          
-          map.current.on('data', (e) => {
-            if (e.dataType === 'style') {
-              console.log('Style data event:', e.isSourceLoaded);
-            }
-          });
-
-          map.current.on("load", () => {
+            
+            // Add custom tiles layer
             if (mapboxConfig.tilesUrl && map.current) {
               console.log('Adding custom tiles source:', {
                 tilesUrl: mapboxConfig.tilesUrl,
@@ -233,7 +223,7 @@ export default function BlocksOnboardingWizard() {
               
               try {
                 map.current.addSource(LAYER_SOURCE, sourceConfig);
-                console.log('Source added successfully');
+                console.log('✓ Source added successfully');
 
                 // Fill layer with Blocks NYC accent color
                 map.current.addLayer({
@@ -245,8 +235,8 @@ export default function BlocksOnboardingWizard() {
                     "fill-color": [
                       "case",
                       ["boolean", ["feature-state", "selected"], false],
-                      "hsl(214, 100%, 62%)", // accent-blue
-                      "hsl(0, 0%, 93%)" // gray-2
+                      "hsl(214, 100%, 62%)", // accent-blue when selected
+                      "hsl(0, 0%, 93%)" // gray-2 when not selected
                     ],
                     "fill-opacity": [
                       "case",
@@ -256,7 +246,7 @@ export default function BlocksOnboardingWizard() {
                     ],
                   },
                 });
-                console.log('Fill layer added successfully');
+                console.log('✓ Fill layer added successfully');
 
                 // Outline layer
                 map.current.addLayer({
@@ -268,8 +258,8 @@ export default function BlocksOnboardingWizard() {
                     "line-color": [
                       "case",
                       ["boolean", ["feature-state", "selected"], false],
-                      "hsl(214, 100%, 62%)", // accent-blue
-                      "hsl(0, 0%, 86%)" // gray-3
+                      "hsl(214, 100%, 62%)", // accent-blue when selected
+                      "hsl(0, 0%, 86%)" // gray-3 when not selected
                     ],
                     "line-width": [
                       "case",
@@ -279,7 +269,8 @@ export default function BlocksOnboardingWizard() {
                     ],
                   },
                 });
-                console.log('Outline layer added successfully');
+                console.log('✓ Outline layer added successfully');
+                console.log('=== LAYERS CONFIGURED ===');
                 
                 // Listen for source data events
                 map.current.on('sourcedata', (e) => {
@@ -287,7 +278,6 @@ export default function BlocksOnboardingWizard() {
                     console.log('Source data event:', {
                       sourceId: e.sourceId,
                       isSourceLoaded: e.isSourceLoaded,
-                      tile: e.tile
                     });
                   }
                 });
@@ -299,58 +289,77 @@ export default function BlocksOnboardingWizard() {
                   }
                 });
               } catch (error) {
-                console.error('Error adding source or layers:', error);
+                console.error('✗ Error adding source or layers:', error);
                 setMapError('Failed to load block tiles. Please check your tileset configuration.');
               }
+            } else {
+              console.log('No tiles URL configured, skipping custom layer');
+            }
+            
+            // Handle block clicks with proper feature-specific state  
+            map.current.on("click", LAYER_ID, (e) => {
+              const features = map.current?.queryRenderedFeatures(e.point, { layers: [LAYER_ID] });
+              if (!features || features.length === 0) return;
 
-              // Handle block clicks with proper feature-specific state
-              map.current.on("click", LAYER_ID, (e) => {
-                const features = map.current?.queryRenderedFeatures(e.point, { layers: [LAYER_ID] });
-                if (!features || features.length === 0) return;
+              const feature = features[0];
+              const rawId = feature.id ?? feature.properties?.block_id;
+              if (rawId === undefined || rawId === null) return;
 
-                const feature = features[0];
-                const rawId = feature.id ?? feature.properties?.block_id;
-                if (rawId === undefined || rawId === null) return;
+              const id = String(rawId);
 
-                const id = String(rawId);
+              // Toggle selection
+              const isSelected = selectedBlockIds.current.has(id);
+              
+              if (isSelected) {
+                selectedBlockIds.current.delete(id);
+                map.current?.setFeatureState(
+                  { source: LAYER_SOURCE, sourceLayer: LAYER_SOURCE_LAYER, id: rawId },
+                  { selected: false }
+                );
+              } else {
+                selectedBlockIds.current.add(id);
+                map.current?.setFeatureState(
+                  { source: LAYER_SOURCE, sourceLayer: LAYER_SOURCE_LAYER, id: rawId },
+                  { selected: true }
+                );
+              }
 
-                // Toggle selection
-                const isSelected = selectedBlockIds.current.has(id);
-                
-                if (isSelected) {
-                  selectedBlockIds.current.delete(id);
-                  map.current?.setFeatureState(
-                    { source: LAYER_SOURCE, sourceLayer: LAYER_SOURCE_LAYER, id: rawId },
-                    { selected: false }
-                  );
+              // Update React state
+              setWizardState((prev) => {
+                const next = new Set(prev.selectedBlocks);
+                if (next.has(id)) {
+                  next.delete(id);
                 } else {
-                  selectedBlockIds.current.add(id);
-                  map.current?.setFeatureState(
-                    { source: LAYER_SOURCE, sourceLayer: LAYER_SOURCE_LAYER, id: rawId },
-                    { selected: true }
-                  );
+                  next.add(id);
                 }
-
-                // Update React state
-                setWizardState((prev) => {
-                  const next = new Set(prev.selectedBlocks);
-                  if (next.has(id)) {
-                    next.delete(id);
-                  } else {
-                    next.add(id);
-                  }
-                  return { ...prev, selectedBlocks: next };
-                });
+                return { ...prev, selectedBlocks: next };
               });
+            });
 
-              // Cursor changes
-              map.current.on("mouseenter", LAYER_ID, () => {
-                if (map.current) map.current.getCanvas().style.cursor = "pointer";
-              });
+            // Cursor changes
+            map.current.on("mouseenter", LAYER_ID, () => {
+              if (map.current) map.current.getCanvas().style.cursor = "pointer";
+            });
 
-              map.current.on("mouseleave", LAYER_ID, () => {
-                if (map.current) map.current.getCanvas().style.cursor = "";
-              });
+            map.current.on("mouseleave", LAYER_ID, () => {
+              if (map.current) map.current.getCanvas().style.cursor = "";
+            });
+            
+            // Expose map debug info to window for troubleshooting
+            if (typeof window !== 'undefined') {
+              (window as any).debugMap = () => {
+                if (!map.current) return 'No map instance';
+                const style = map.current.getStyle();
+                return {
+                  loaded: map.current.loaded(),
+                  style: style?.name,
+                  sources: Object.keys(style?.sources || {}),
+                  layers: style?.layers?.map(l => ({ id: l.id, type: l.type, source: (l as any).source })) || [],
+                  center: map.current.getCenter(),
+                  zoom: map.current.getZoom()
+                };
+              };
+              console.log('Debug: Call window.debugMap() in console to inspect map state');
             }
           });
         } catch (error) {
@@ -369,7 +378,7 @@ export default function BlocksOnboardingWizard() {
         map.current = null;
       }
     };
-  }, [currentStep, mapboxConfig]);
+  }, [currentStep, mapboxConfig.token, mapboxConfig.tilesUrl, mapboxConfig.sourceLayer]);
 
   // Validation for proceeding
   const canProceed = () => {
