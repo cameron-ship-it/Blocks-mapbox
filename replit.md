@@ -8,6 +8,20 @@ Blocks is a modern NYC apartment search application featuring a 4-step wizard fl
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+### Block Selection Refactoring (October 2025)
+Fixed the map block selection system to ensure clicking one block only selects that specific block:
+- **Issue**: Previously, clicking one block was selecting all blocks on the map
+- **Solution**: Refactored to use Mapbox's feature-state API with proper per-feature isolation
+- **Implementation Details**:
+  - Created `toggleFeature(fid)` function for scoped feature state updates
+  - Created `reapplySelections()` function to restore selections after data reloads
+  - Improved ID extraction with fallback logic (feature.id → block_id → GEOID)
+  - Added sourcedata event listener to automatically restore selections during zoom/pan
+  - Fixed TypeScript null check errors in map event handlers
+  - Cleaned up ProgressStepper component code structure
+
 ## System Architecture
 
 ### Frontend Architecture
@@ -35,6 +49,12 @@ Preferred communication style: Simple, everyday language.
 - Custom vector tiles layer for NYC city blocks with clickable polygons
 - Configurable map styles and data sources via environment variables
 - Progressive disclosure pattern: wizard steps prepare users before reaching the map
+- **Block Selection System**: Feature-state based per-block selection using Mapbox's `setFeatureState()` API
+  - Unique feature IDs promoted via `promoteId: "block_id"` on vector source
+  - Robust ID extraction with fallbacks: `feature.id`, `block_id`, `GEOID`
+  - `toggleFeature()` function for independent block selection/deselection
+  - `reapplySelections()` function to restore selections after zoom/pan/data reloads
+  - Selections persist through tile updates via sourcedata event listener
 
 ### Backend Architecture
 
