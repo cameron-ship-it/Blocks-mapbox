@@ -46,13 +46,8 @@ export const AppShell: React.FC<AppShellProps> = ({
         <div className="container mx-auto">
           <div className="flex h-16 items-center justify-between">
             {/* Logo/Wordmark */}
-            <Link href="/">
-              <a 
-                className="text-xl font-display font-bold tracking-tight text-foreground hover-elevate px-2 py-1 rounded-md transition-colors"
-                data-testid="link-home"
-              >
-                Blocks NYC
-              </a>
+            <Link href="/" className="text-xl font-display font-bold tracking-tight text-foreground hover-elevate px-2 py-1 rounded-md transition-colors" data-testid="link-home">
+              Blocks NYC
             </Link>
 
             {/* Step Indicator (Center) - Hidden on mobile */}
@@ -67,14 +62,9 @@ export const AppShell: React.FC<AppShellProps> = ({
             )}
 
             {/* Help Link */}
-            <Link href="/help">
-              <a
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                data-testid="link-help"
-              >
-                <HelpCircle className="h-4 w-4" />
-                <span className="hidden sm:inline">Help</span>
-              </a>
+            <Link href="/help" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors" data-testid="link-help">
+              <HelpCircle className="h-4 w-4" />
+              <span className="hidden sm:inline">Help</span>
             </Link>
           </div>
         </div>
@@ -101,21 +91,11 @@ export const AppShell: React.FC<AppShellProps> = ({
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             {/* Footer Links */}
             <div className="flex items-center gap-6 text-sm text-muted-foreground">
-              <Link href="/about">
-                <a 
-                  className="hover:text-foreground transition-colors"
-                  data-testid="link-about"
-                >
-                  About
-                </a>
+              <Link href="/about" className="hover:text-foreground transition-colors" data-testid="link-about">
+                About
               </Link>
-              <Link href="/privacy">
-                <a 
-                  className="hover:text-foreground transition-colors"
-                  data-testid="link-privacy"
-                >
-                  Privacy
-                </a>
+              <Link href="/privacy" className="hover:text-foreground transition-colors" data-testid="link-privacy">
+                Privacy
               </Link>
               <span className="text-xs">
                 © {new Date().getFullYear()} Blocks NYC

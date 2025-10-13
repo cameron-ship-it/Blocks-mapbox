@@ -73,9 +73,23 @@ export default function BlocksOnboardingWizard() {
   const [mapError, setMapError] = useState<string | null>(null);
   const selectedBlockIds = useRef<Set<string>>(new Set());
 
-  const { data: mapboxConfig } = useQuery<MapboxConfig>({
-    queryKey: ["/api/mapbox-config"],
-  });
+  // Get Mapbox token directly from environment variable
+  const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN;
+  const mapboxConfig = {
+    token: mapboxToken || "",
+    tilesUrl: import.meta.env.VITE_MAPBOX_TILES_URL || "",
+    sourceLayer: import.meta.env.VITE_MAPBOX_SOURCE_LAYER || ""
+  };
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('Mapbox Config:', {
+      hasToken: !!mapboxConfig.token,
+      tokenPrefix: mapboxConfig.token?.substring(0, 10),
+      tilesUrl: mapboxConfig.tilesUrl,
+      sourceLayer: mapboxConfig.sourceLayer
+    });
+  }, [mapboxConfig.token, mapboxConfig.tilesUrl, mapboxConfig.sourceLayer]);
 
   // Get available neighborhoods based on selected boroughs
   const availableNeighborhoods = boroughs
@@ -125,8 +139,18 @@ export default function BlocksOnboardingWizard() {
 
   // Initialize Mapbox map
   useEffect(() => {
-    if (currentStep === "map" && mapContainer.current && mapboxConfig?.token && !map.current) {
+    console.log('Map initialization useEffect triggered:', {
+      currentStep,
+      hasContainer: !!mapContainer.current,
+      hasToken: !!mapboxConfig.token,
+      hasMap: !!map.current
+    });
+    
+    if (currentStep === "map" && mapContainer.current && mapboxConfig.token && !map.current) {
+      console.log('Initializing Mapbox map...');
+      
       if (!mapboxgl.supported({ failIfMajorPerformanceCaveat: true })) {
+        console.error('WebGL not supported');
         setMapError('WebGL not supported. Please open in a new browser tab with hardware acceleration enabled.');
         return;
       }
@@ -134,6 +158,7 @@ export default function BlocksOnboardingWizard() {
       try {
         mapboxgl.accessToken = mapboxConfig.token;
         setMapError(null);
+        console.log('Mapbox accessToken set, creating map instance...');
 
         map.current = new mapboxgl.Map({
           container: mapContainer.current,
@@ -142,9 +167,15 @@ export default function BlocksOnboardingWizard() {
           zoom: 11,
         });
 
+        console.log('Map instance created successfully');
+
         map.current.on('error', (e) => {
           console.error('Mapbox error:', e);
           setMapError('Map failed to load. WebGL may not be available.');
+        });
+        
+        map.current.on('load', () => {
+          console.log('Map loaded successfully');
         });
       } catch (error) {
         console.error('Failed to initialize Mapbox:', error);
@@ -609,7 +640,7 @@ export default function BlocksOnboardingWizard() {
                 className="space-y-4"
                 data-testid="step-map"
               >
-                {!mapboxConfig?.token ? (
+                {!mapboxConfig.token ? (
                   <EmptyState
                     icon={MapIcon}
                     title="Map not available"
@@ -628,7 +659,7 @@ export default function BlocksOnboardingWizard() {
                     {mapError}
                   </div>
                 )}
-                {!mapboxConfig?.tilesUrl && mapboxConfig?.token && !mapError && (
+                {!mapboxConfig.tilesUrl && mapboxConfig.token && !mapError && (
                   <div className="text-sm text-muted-foreground text-center p-4 bg-muted/50 rounded-lg" data-testid="text-blocks-info">
                     <p>Interactive block selection requires custom tiles configuration.</p>
                   </div>
