@@ -211,7 +211,7 @@ export default function BlocksOnboardingWizard() {
               
               const sourceConfig: any = {
                 type: "vector",
-                promoteId: "block_id"
+                promoteId: "OBJECTID"
               };
               
               if (mapboxConfig.tilesUrl.startsWith("mapbox://")) {
@@ -310,8 +310,8 @@ export default function BlocksOnboardingWizard() {
             }
             
             const toggleFeature = (fid: string | number) => {
-              const selected = selectedBlockIds.current.has(String(fid));
               const fidString = String(fid);
+              const selected = selectedBlockIds.current.has(fidString);
               
               if (selected) {
                 selectedBlockIds.current.delete(fidString);
@@ -340,8 +340,9 @@ export default function BlocksOnboardingWizard() {
             const reapplySelections = () => {
               if (!map.current) return;
               
-              Array.from(selectedBlockIds.current).forEach(fid => {
+              Array.from(selectedBlockIds.current).forEach(fidString => {
                 if (map.current) {
+                  const fid = !isNaN(Number(fidString)) ? Number(fidString) : fidString;
                   map.current.setFeatureState(
                     { source: LAYER_SOURCE, sourceLayer: LAYER_SOURCE_LAYER, id: fid },
                     { selected: true }
@@ -361,7 +362,7 @@ export default function BlocksOnboardingWizard() {
                 }
 
                 const feature = features[0];
-                const fid = String(feature.id ?? feature.properties?.block_id ?? feature.properties?.GEOID ?? '');
+                const fid = feature.id ?? feature.properties?.OBJECTID ?? feature.properties?.block_id ?? feature.properties?.GEOID;
                 
                 console.log('Feature clicked:', {
                   extractedId: fid,
@@ -369,7 +370,7 @@ export default function BlocksOnboardingWizard() {
                   properties: feature.properties
                 });
                 
-                if (!fid) {
+                if (fid === undefined || fid === null || fid === '') {
                   console.warn('Feature has no valid ID! Cannot set feature state.');
                   return;
                 }
@@ -456,8 +457,9 @@ export default function BlocksOnboardingWizard() {
     if (map.current && mapboxConfig) {
       selectedBlockIds.current.delete(blockId);
       
+      const fid = !isNaN(Number(blockId)) ? Number(blockId) : blockId;
       map.current.setFeatureState(
-        { source: LAYER_SOURCE, sourceLayer: mapboxConfig.sourceLayer || "blocks", id: blockId },
+        { source: LAYER_SOURCE, sourceLayer: mapboxConfig.sourceLayer || "blocks", id: fid },
         { selected: false }
       );
       
@@ -472,8 +474,9 @@ export default function BlocksOnboardingWizard() {
   const handleClearAllBlocks = () => {
     if (map.current && mapboxConfig) {
       selectedBlockIds.current.forEach((id) => {
+        const fid = !isNaN(Number(id)) ? Number(id) : id;
         map.current?.setFeatureState(
-          { source: LAYER_SOURCE, sourceLayer: mapboxConfig.sourceLayer || "blocks", id },
+          { source: LAYER_SOURCE, sourceLayer: mapboxConfig.sourceLayer || "blocks", id: fid },
           { selected: false }
         );
       });
