@@ -179,11 +179,34 @@ export default function BlocksOnboardingWizard() {
 
           map.current.on('error', (e) => {
             console.error('Mapbox error:', e);
-            setMapError('Map failed to load. WebGL may not be available.');
+            console.error('Error details:', {
+              error: e.error,
+              message: e.error?.message,
+              status: (e.error as any)?.status
+            });
+            
+            if ((e.error as any)?.status === 401) {
+              setMapError('Invalid Mapbox token. Please check your VITE_MAPBOX_TOKEN.');
+            } else if (e.error?.message?.includes('style')) {
+              setMapError('Map style failed to load. Please check your internet connection.');
+            } else {
+              setMapError('Map failed to load. Please refresh the page.');
+            }
           });
           
           map.current.on('load', () => {
             console.log('Map loaded successfully');
+            console.log('Map style loaded:', map.current?.getStyle()?.name);
+          });
+          
+          map.current.on('styledata', () => {
+            console.log('Map style data loaded');
+          });
+          
+          map.current.on('data', (e) => {
+            if (e.dataType === 'style') {
+              console.log('Style data event:', e.isSourceLoaded);
+            }
           });
 
           map.current.on("load", () => {
@@ -675,7 +698,7 @@ export default function BlocksOnboardingWizard() {
                     <div
                       ref={mapContainer}
                       style={{ height: '520px', width: '100%' }}
-                      className="rounded-card overflow-hidden border"
+                      className="rounded-card border [&_.mapboxgl-canvas]:rounded-card"
                       data-testid="map-container"
                     />
                     {!mapboxConfig.tilesUrl && (
