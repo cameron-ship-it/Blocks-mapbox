@@ -146,154 +146,165 @@ export default function BlocksOnboardingWizard() {
       hasMap: !!map.current
     });
     
-    if (currentStep === "map" && mapContainer.current && mapboxConfig.token && !map.current) {
-      console.log('Initializing Mapbox map...');
-      
-      if (!mapboxgl.supported({ failIfMajorPerformanceCaveat: true })) {
-        console.error('WebGL not supported');
-        setMapError('WebGL not supported. Please open in a new browser tab with hardware acceleration enabled.');
-        return;
-      }
-
-      try {
-        mapboxgl.accessToken = mapboxConfig.token;
-        setMapError(null);
-        console.log('Mapbox accessToken set, creating map instance...');
-
-        map.current = new mapboxgl.Map({
-          container: mapContainer.current,
-          style: "mapbox://styles/mapbox/light-v11",
-          center: [-73.935242, 40.730610],
-          zoom: 11,
-        });
-
-        console.log('Map instance created successfully');
-
-        map.current.on('error', (e) => {
-          console.error('Mapbox error:', e);
-          setMapError('Map failed to load. WebGL may not be available.');
-        });
-        
-        map.current.on('load', () => {
-          console.log('Map loaded successfully');
-        });
-      } catch (error) {
-        console.error('Failed to initialize Mapbox:', error);
-        setMapError('Failed to initialize map.');
-        return;
-      }
-
-      map.current.on("load", () => {
-        if (mapboxConfig.tilesUrl && map.current) {
-          const LAYER_SOURCE_LAYER = mapboxConfig.sourceLayer || "blocks";
-          
-          const sourceConfig: any = {
-            type: "vector",
-            promoteId: "block_id"
-          };
-          
-          if (mapboxConfig.tilesUrl.startsWith("mapbox://")) {
-            sourceConfig.url = mapboxConfig.tilesUrl;
-          } else {
-            sourceConfig.tiles = [mapboxConfig.tilesUrl];
-          }
-          
-          map.current.addSource(LAYER_SOURCE, sourceConfig);
-
-          // Fill layer with Blocks NYC accent color
-          map.current.addLayer({
-            id: LAYER_ID,
-            type: "fill",
-            source: LAYER_SOURCE,
-            "source-layer": LAYER_SOURCE_LAYER,
-            paint: {
-              "fill-color": [
-                "case",
-                ["boolean", ["feature-state", "selected"], false],
-                "hsl(214, 100%, 62%)", // accent-blue
-                "hsl(0, 0%, 93%)" // gray-2
-              ],
-              "fill-opacity": [
-                "case",
-                ["boolean", ["feature-state", "selected"], false],
-                0.3,
-                0.6
-              ],
-            },
-          });
-
-          // Outline layer
-          map.current.addLayer({
-            id: LAYER_LINE_ID,
-            type: "line",
-            source: LAYER_SOURCE,
-            "source-layer": LAYER_SOURCE_LAYER,
-            paint: {
-              "line-color": [
-                "case",
-                ["boolean", ["feature-state", "selected"], false],
-                "hsl(214, 100%, 62%)", // accent-blue
-                "hsl(0, 0%, 86%)" // gray-3
-              ],
-              "line-width": [
-                "case",
-                ["boolean", ["feature-state", "selected"], false],
-                2,
-                0.8
-              ],
-            },
-          });
-
-          // Handle block clicks with proper feature-specific state
-          map.current.on("click", LAYER_ID, (e) => {
-            const features = map.current?.queryRenderedFeatures(e.point, { layers: [LAYER_ID] });
-            if (!features || features.length === 0) return;
-
-            const feature = features[0];
-            const rawId = feature.id ?? feature.properties?.block_id;
-            if (rawId === undefined || rawId === null) return;
-
-            const id = String(rawId);
-
-            // Toggle selection
-            const isSelected = selectedBlockIds.current.has(id);
-            
-            if (isSelected) {
-              selectedBlockIds.current.delete(id);
-              map.current?.setFeatureState(
-                { source: LAYER_SOURCE, sourceLayer: LAYER_SOURCE_LAYER, id: rawId },
-                { selected: false }
-              );
-            } else {
-              selectedBlockIds.current.add(id);
-              map.current?.setFeatureState(
-                { source: LAYER_SOURCE, sourceLayer: LAYER_SOURCE_LAYER, id: rawId },
-                { selected: true }
-              );
-            }
-
-            // Update React state
-            setWizardState((prev) => {
-              const next = new Set(prev.selectedBlocks);
-              if (next.has(id)) {
-                next.delete(id);
-              } else {
-                next.add(id);
-              }
-              return { ...prev, selectedBlocks: next };
-            });
-          });
-
-          // Cursor changes
-          map.current.on("mouseenter", LAYER_ID, () => {
-            if (map.current) map.current.getCanvas().style.cursor = "pointer";
-          });
-
-          map.current.on("mouseleave", LAYER_ID, () => {
-            if (map.current) map.current.getCanvas().style.cursor = "";
-          });
+    if (currentStep === "map" && mapboxConfig.token && !map.current) {
+      // Use requestAnimationFrame to ensure the ref is attached after render
+      const initMap = () => {
+        if (!mapContainer.current) {
+          console.log('Container not ready, retrying...');
+          requestAnimationFrame(initMap);
+          return;
         }
-      });
+
+        console.log('Initializing Mapbox map...');
+        
+        if (!mapboxgl.supported({ failIfMajorPerformanceCaveat: true })) {
+          console.error('WebGL not supported');
+          setMapError('WebGL not supported. Please open in a new browser tab with hardware acceleration enabled.');
+          return;
+        }
+
+        try {
+          mapboxgl.accessToken = mapboxConfig.token;
+          setMapError(null);
+          console.log('Mapbox accessToken set, creating map instance...');
+
+          map.current = new mapboxgl.Map({
+            container: mapContainer.current,
+            style: "mapbox://styles/mapbox/light-v11",
+            center: [-73.935242, 40.730610],
+            zoom: 11,
+          });
+
+          console.log('Map instance created successfully');
+
+          map.current.on('error', (e) => {
+            console.error('Mapbox error:', e);
+            setMapError('Map failed to load. WebGL may not be available.');
+          });
+          
+          map.current.on('load', () => {
+            console.log('Map loaded successfully');
+          });
+
+          map.current.on("load", () => {
+            if (mapboxConfig.tilesUrl && map.current) {
+              const LAYER_SOURCE_LAYER = mapboxConfig.sourceLayer || "blocks";
+              
+              const sourceConfig: any = {
+                type: "vector",
+                promoteId: "block_id"
+              };
+              
+              if (mapboxConfig.tilesUrl.startsWith("mapbox://")) {
+                sourceConfig.url = mapboxConfig.tilesUrl;
+              } else {
+                sourceConfig.tiles = [mapboxConfig.tilesUrl];
+              }
+              
+              map.current.addSource(LAYER_SOURCE, sourceConfig);
+
+              // Fill layer with Blocks NYC accent color
+              map.current.addLayer({
+                id: LAYER_ID,
+                type: "fill",
+                source: LAYER_SOURCE,
+                "source-layer": LAYER_SOURCE_LAYER,
+                paint: {
+                  "fill-color": [
+                    "case",
+                    ["boolean", ["feature-state", "selected"], false],
+                    "hsl(214, 100%, 62%)", // accent-blue
+                    "hsl(0, 0%, 93%)" // gray-2
+                  ],
+                  "fill-opacity": [
+                    "case",
+                    ["boolean", ["feature-state", "selected"], false],
+                    0.3,
+                    0.6
+                  ],
+                },
+              });
+
+              // Outline layer
+              map.current.addLayer({
+                id: LAYER_LINE_ID,
+                type: "line",
+                source: LAYER_SOURCE,
+                "source-layer": LAYER_SOURCE_LAYER,
+                paint: {
+                  "line-color": [
+                    "case",
+                    ["boolean", ["feature-state", "selected"], false],
+                    "hsl(214, 100%, 62%)", // accent-blue
+                    "hsl(0, 0%, 86%)" // gray-3
+                  ],
+                  "line-width": [
+                    "case",
+                    ["boolean", ["feature-state", "selected"], false],
+                    2,
+                    0.8
+                  ],
+                },
+              });
+
+              // Handle block clicks with proper feature-specific state
+              map.current.on("click", LAYER_ID, (e) => {
+                const features = map.current?.queryRenderedFeatures(e.point, { layers: [LAYER_ID] });
+                if (!features || features.length === 0) return;
+
+                const feature = features[0];
+                const rawId = feature.id ?? feature.properties?.block_id;
+                if (rawId === undefined || rawId === null) return;
+
+                const id = String(rawId);
+
+                // Toggle selection
+                const isSelected = selectedBlockIds.current.has(id);
+                
+                if (isSelected) {
+                  selectedBlockIds.current.delete(id);
+                  map.current?.setFeatureState(
+                    { source: LAYER_SOURCE, sourceLayer: LAYER_SOURCE_LAYER, id: rawId },
+                    { selected: false }
+                  );
+                } else {
+                  selectedBlockIds.current.add(id);
+                  map.current?.setFeatureState(
+                    { source: LAYER_SOURCE, sourceLayer: LAYER_SOURCE_LAYER, id: rawId },
+                    { selected: true }
+                  );
+                }
+
+                // Update React state
+                setWizardState((prev) => {
+                  const next = new Set(prev.selectedBlocks);
+                  if (next.has(id)) {
+                    next.delete(id);
+                  } else {
+                    next.add(id);
+                  }
+                  return { ...prev, selectedBlocks: next };
+                });
+              });
+
+              // Cursor changes
+              map.current.on("mouseenter", LAYER_ID, () => {
+                if (map.current) map.current.getCanvas().style.cursor = "pointer";
+              });
+
+              map.current.on("mouseleave", LAYER_ID, () => {
+                if (map.current) map.current.getCanvas().style.cursor = "";
+              });
+            }
+          });
+        } catch (error) {
+          console.error('Failed to initialize Mapbox:', error);
+          setMapError('Failed to initialize map.');
+          return;
+        }
+      };
+
+      requestAnimationFrame(initMap);
     }
 
     return () => {
