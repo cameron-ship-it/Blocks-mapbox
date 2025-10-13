@@ -1,16 +1,31 @@
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
+import { RangeSlider } from "@/components/ui/range-slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { boroughs, type Borough, type Neighborhood } from "@/lib/geo";
+import { Input } from "@/components/ui/input";
+import { FormHint } from "@/components/ui/form-hint";
+import { EmptyState } from "@/components/ui/empty-state";
+import { AppShell } from "@/components/layout/AppShell";
+import { useStep, type WizardStep } from "@/hooks/useStep";
+import { boroughs } from "@/lib/geo";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, ChevronLeft, MapPin, Building2, Map, X } from "lucide-react";
+import { 
+  ChevronRight, 
+  ChevronLeft, 
+  Building2, 
+  Map as MapIcon, 
+  Search, 
+  X, 
+  MapPin,
+  CheckCircle2,
+  DollarSign
+} from "lucide-react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-
-type WizardStep = "budget" | "borough" | "neighborhood" | "map" | "complete";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 // Mapbox layer constants
 const LAYER_SOURCE = "blocks";
@@ -31,8 +46,17 @@ interface WizardState {
   selectedBlocks: Set<string>;
 }
 
+// Steps configuration for the stepper
+const WIZARD_STEPS = [
+  { id: 'budget', label: 'Budget' },
+  { id: 'borough', label: 'Borough' },
+  { id: 'neighborhood', label: 'Neighborhood' },
+  { id: 'map', label: 'Blocks' },
+  { id: 'review', label: 'Review' },
+];
+
 export default function BlocksOnboardingWizard() {
-  const [currentStep, setCurrentStep] = useState<WizardStep>("budget");
+  const { currentStep, next, back, goTo, isFirstStep, isLastStep } = useStep('budget');
   const [wizardState, setWizardState] = useState<WizardState>({
     budgetMin: 1500,
     budgetMax: 4000,
@@ -41,10 +65,13 @@ export default function BlocksOnboardingWizard() {
     selectedBlocks: new Set<string>(),
   });
 
+  // Neighborhood search
+  const [neighborhoodSearch, setNeighborhoodSearch] = useState("");
+
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapError, setMapError] = useState<string | null>(null);
-  const selectedIds = useRef<Set<string>>(new Set());
+  const selectedBlockIds = useRef<Set<string>>(new Set());
 
   const { data: mapboxConfig } = useQuery<MapboxConfig>({
     queryKey: ["/api/mapbox-config"],
@@ -54,6 +81,13 @@ export default function BlocksOnboardingWizard() {
   const availableNeighborhoods = boroughs
     .filter((b) => wizardState.selectedBoroughs.includes(b.id))
     .flatMap((b) => b.neighborhoods);
+
+  // Filter neighborhoods by search
+  const filteredNeighborhoods = neighborhoodSearch
+    ? availableNeighborhoods.filter((n) =>
+        n.name.toLowerCase().includes(neighborhoodSearch.toLowerCase())
+      )
+    : availableNeighborhoods;
 
   // Toggle borough selection
   const toggleBorough = (boroughId: string) => {
@@ -84,18 +118,16 @@ export default function BlocksOnboardingWizard() {
     }));
   };
 
+  // Clear all neighborhoods
+  const clearAllNeighborhoods = () => {
+    setWizardState((prev) => ({ ...prev, selectedNeighborhoods: [] }));
+  };
+
   // Initialize Mapbox map
   useEffect(() => {
     if (currentStep === "map" && mapContainer.current && mapboxConfig?.token && !map.current) {
-      // WebGL diagnostics
-      console.log("Mapbox supported:", mapboxgl.supported());
-      const canvas = document.createElement("canvas");
-      const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
-      console.log("WebGL context:", !!gl);
-
-      // Check if Mapbox is supported
       if (!mapboxgl.supported({ failIfMajorPerformanceCaveat: true })) {
-        setMapError('WebGL not supported in this environment. Please open the app in a new browser tab and enable hardware acceleration.');
+        setMapError('WebGL not supported. Please open in a new browser tab with hardware acceleration enabled.');
         return;
       }
 
@@ -106,27 +138,24 @@ export default function BlocksOnboardingWizard() {
         map.current = new mapboxgl.Map({
           container: mapContainer.current,
           style: "mapbox://styles/mapbox/light-v11",
-          center: [-73.935242, 40.730610], // NYC center
+          center: [-73.935242, 40.730610],
           zoom: 11,
         });
 
-        // Handle map errors
         map.current.on('error', (e) => {
           console.error('Mapbox error:', e);
-          setMapError('Map failed to load. This may be due to WebGL not being available in this environment.');
+          setMapError('Map failed to load. WebGL may not be available.');
         });
       } catch (error) {
         console.error('Failed to initialize Mapbox:', error);
-        setMapError('Failed to initialize map. WebGL may not be available in this environment.');
+        setMapError('Failed to initialize map.');
         return;
       }
 
       map.current.on("load", () => {
-        // Add blocks layer if tiles URL is available
         if (mapboxConfig.tilesUrl && map.current) {
           const LAYER_SOURCE_LAYER = mapboxConfig.sourceLayer || "blocks";
           
-          // Use 'url' for Mapbox tileset references, 'tiles' for URL templates
           const sourceConfig: any = {
             type: "vector",
             promoteId: "block_id"
@@ -140,6 +169,7 @@ export default function BlocksOnboardingWizard() {
           
           map.current.addSource(LAYER_SOURCE, sourceConfig);
 
+          // Fill layer with Blocks NYC accent color
           map.current.addLayer({
             id: LAYER_ID,
             type: "fill",
@@ -149,92 +179,81 @@ export default function BlocksOnboardingWizard() {
               "fill-color": [
                 "case",
                 ["boolean", ["feature-state", "selected"], false],
-                "#000000",
-                "#e5e5e5"
+                "hsl(214, 100%, 62%)", // accent-blue
+                "hsl(0, 0%, 93%)" // gray-2
               ],
-              "fill-opacity": 0.6,
+              "fill-opacity": [
+                "case",
+                ["boolean", ["feature-state", "selected"], false],
+                0.3,
+                0.6
+              ],
             },
           });
 
+          // Outline layer
           map.current.addLayer({
             id: LAYER_LINE_ID,
             type: "line",
             source: LAYER_SOURCE,
             "source-layer": LAYER_SOURCE_LAYER,
             paint: {
-              "line-color": "#666666",
-              "line-width": 0.8,
+              "line-color": [
+                "case",
+                ["boolean", ["feature-state", "selected"], false],
+                "hsl(214, 100%, 62%)", // accent-blue
+                "hsl(0, 0%, 86%)" // gray-3
+              ],
+              "line-width": [
+                "case",
+                ["boolean", ["feature-state", "selected"], false],
+                2,
+                0.8
+              ],
             },
           });
 
-          // Runtime validator to prevent "wrong sourceLayer" bug
-          const layers = map.current.getStyle().layers || [];
-          const fillLayer = layers.find(l => l.id === LAYER_ID) as any;
-          const srcLayerUsedByFill = fillLayer?.["source-layer"];
-          if (srcLayerUsedByFill !== LAYER_SOURCE_LAYER) {
-            console.error("source-layer mismatch:", {
-              expected: LAYER_SOURCE_LAYER,
-              actual: srcLayerUsedByFill
-            });
-          }
-
-          // Helper function to update paint property with current selections
-          const updateBlockColors = () => {
-            if (!map.current) return;
-            
-            const selectedArray = Array.from(selectedIds.current).map(String);
-            const getIdAsString = ["to-string", ["coalesce", ["id"], ["get", "block_id"]]];
-            const selectedLiteral = ["literal", selectedArray];
-            
-            map.current.setPaintProperty(LAYER_ID, "fill-color", [
-              "case",
-              ["in", getIdAsString, selectedLiteral],
-              "#000000",
-              "#e5e5e5"
-            ]);
-          };
-
-          // Handle block clicks
+          // Handle block clicks with proper feature-specific state
           map.current.on("click", LAYER_ID, (e) => {
-            const f = map.current?.queryRenderedFeatures(e.point, { layers: [LAYER_ID] })?.[0];
-            if (!f) return;
+            const features = map.current?.queryRenderedFeatures(e.point, { layers: [LAYER_ID] });
+            if (!features || features.length === 0) return;
 
-            // ID sanity: prefer f.id (from promoteId); fallback to properties.block_id
-            const rawId = (f.id ?? (f.properties && f.properties.block_id));
-            if (rawId === undefined || rawId === null) {
-              console.warn("No id/block_id on feature. Check LAYER_SOURCE_LAYER and promoteId.");
-              return;
-            }
-            
-            // Normalize id to a stable primitive (string is safest across tiles)
-            const id = typeof rawId === "number" ? rawId : String(rawId);
-            console.log("clicked id:", rawId, "normalized:", id, "layer:", LAYER_SOURCE_LAYER);
+            const feature = features[0];
+            const rawId = feature.id ?? feature.properties?.block_id;
+            if (rawId === undefined || rawId === null) return;
 
-            const idStr = String(id);
-            
+            const id = String(rawId);
+
             // Toggle selection
-            if (selectedIds.current.has(idStr)) {
-              selectedIds.current.delete(idStr);
-            } else {
-              selectedIds.current.add(idStr);
-            }
+            const isSelected = selectedBlockIds.current.has(id);
             
-            // Update paint property to reflect new selections
-            updateBlockColors();
+            if (isSelected) {
+              selectedBlockIds.current.delete(id);
+              map.current?.setFeatureState(
+                { source: LAYER_SOURCE, sourceLayer: LAYER_SOURCE_LAYER, id: rawId },
+                { selected: false }
+              );
+            } else {
+              selectedBlockIds.current.add(id);
+              map.current?.setFeatureState(
+                { source: LAYER_SOURCE, sourceLayer: LAYER_SOURCE_LAYER, id: rawId },
+                { selected: true }
+              );
+            }
 
             // Update React state
             setWizardState((prev) => {
               const next = new Set(prev.selectedBlocks);
-              if (next.has(idStr)) {
-                next.delete(idStr);
+              if (next.has(id)) {
+                next.delete(id);
               } else {
-                next.add(idStr);
+                next.add(id);
               }
               return { ...prev, selectedBlocks: next };
             });
           });
 
-          // Change cursor on hover
+          // Cursor changes
           map.current.on("mouseenter", LAYER_ID, () => {
             if (map.current) map.current.getCanvas().style.cursor = "pointer";
           });
@@ -254,105 +273,62 @@ export default function BlocksOnboardingWizard() {
     };
   }, [currentStep, mapboxConfig]);
 
+  // Validation for proceeding
   const canProceed = () => {
     switch (currentStep) {
       case "budget":
-        return true;
+        return wizardState.budgetMin < wizardState.budgetMax;
       case "borough":
         return wizardState.selectedBoroughs.length > 0;
       case "neighborhood":
         return wizardState.selectedNeighborhoods.length > 0;
       case "map":
-        return true; // Map is the final step, can always "finish"
+        return true;
+      case "review":
+        return true;
       default:
         return false;
     }
   };
 
   const handleNext = () => {
-    const steps: WizardStep[] = ["budget", "borough", "neighborhood", "map", "complete"];
-    const currentIndex = steps.indexOf(currentStep);
-    if (currentIndex < steps.length - 1) {
-      setCurrentStep(steps[currentIndex + 1]);
-    }
-  };
-
-  const handleRestart = () => {
-    // Clear selections when restarting
-    if (map.current && mapboxConfig) {
-      selectedIds.current.clear();
-      
-      // Update paint property to reflect empty selection
-      map.current.setPaintProperty(LAYER_ID, "fill-color", [
-        "case",
-        ["in", ["to-string", ["coalesce", ["id"], ["get", "block_id"]]], ["literal", []]],
-        "#000000",
-        "#e5e5e5"
-      ]);
-    }
-    
-    setCurrentStep("budget");
-    setWizardState({
-      budgetMin: 1500,
-      budgetMax: 4000,
-      selectedBoroughs: [],
-      selectedNeighborhoods: [],
-      selectedBlocks: new Set<string>(),
-    });
-  };
-
-  const handleBack = () => {
-    const steps: WizardStep[] = ["budget", "borough", "neighborhood", "map"];
-    const currentIndex = steps.indexOf(currentStep);
-    if (currentIndex > 0) {
-      setCurrentStep(steps[currentIndex - 1]);
+    if (canProceed()) {
+      next();
     }
   };
 
   const handleRemoveBlock = (blockId: string) => {
     if (map.current && mapboxConfig) {
-      selectedIds.current.delete(blockId);
+      selectedBlockIds.current.delete(blockId);
       
-      // Update paint property to reflect new selections
-      const selectedArray = Array.from(selectedIds.current).map(String);
-      const getIdAsString = ["to-string", ["coalesce", ["id"], ["get", "block_id"]]];
-      const selectedLiteral = ["literal", selectedArray];
-      
-      map.current.setPaintProperty(LAYER_ID, "fill-color", [
-        "case",
-        ["in", getIdAsString, selectedLiteral],
-        "#000000",
-        "#e5e5e5"
-      ]);
+      map.current.setFeatureState(
+        { source: LAYER_SOURCE, sourceLayer: mapboxConfig.sourceLayer || "blocks", id: blockId },
+        { selected: false }
+      );
       
       setWizardState((prev) => {
-        const next = new Set(prev.selectedBlocks);
-        next.delete(blockId);
-        return { ...prev, selectedBlocks: next };
+        const nextBlocks = new Set(prev.selectedBlocks);
+        nextBlocks.delete(blockId);
+        return { ...prev, selectedBlocks: nextBlocks };
       });
     }
   };
 
   const handleClearAllBlocks = () => {
     if (map.current && mapboxConfig) {
-      selectedIds.current.clear();
+      selectedBlockIds.current.forEach((id) => {
+        map.current?.setFeatureState(
+          { source: LAYER_SOURCE, sourceLayer: mapboxConfig.sourceLayer || "blocks", id },
+          { selected: false }
+        );
+      });
       
-      // Update paint property to reflect empty selection
-      map.current.setPaintProperty(LAYER_ID, "fill-color", [
-        "case",
-        ["in", ["to-string", ["coalesce", ["id"], ["get", "block_id"]]], ["literal", []]],
-        "#000000",
-        "#e5e5e5"
-      ]);
-      
-      setWizardState((prev) => ({
-        ...prev,
-        selectedBlocks: new Set<string>(),
-      }));
+      selectedBlockIds.current.clear();
+      setWizardState((prev) => ({ ...prev, selectedBlocks: new Set<string>() }));
     }
   };
 
-  // Get selected borough and neighborhood names for summary
+  // Get summary data
   const selectedBoroughNames = boroughs
     .filter((b) => wizardState.selectedBoroughs.includes(b.id))
     .map((b) => b.name);
@@ -363,183 +339,287 @@ export default function BlocksOnboardingWizard() {
     .map((n) => n.name);
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4" data-testid="wizard-container">
-      <div className="w-full max-w-4xl">
-        {/* Progress indicator - hide on complete */}
-        {currentStep !== "complete" && (
-          <div className="mb-8 flex justify-center gap-2" data-testid="progress-indicator">
-            {["budget", "borough", "neighborhood", "map"].map((step, index) => (
-              <div
-                key={step}
-                className={`h-2 flex-1 rounded-full transition-colors ${
-                  currentStep === step
-                    ? "bg-primary"
-                    : ["budget", "borough", "neighborhood", "map"].indexOf(currentStep) > index
-                    ? "bg-primary/50"
-                    : "bg-muted"
-                }`}
-                data-testid={`progress-step-${step}`}
-              />
-            ))}
-          </div>
-        )}
-
-        <Card data-testid="card-wizard">
+    <AppShell
+      currentStep={currentStep}
+      steps={WIZARD_STEPS}
+      onStepClick={(stepId) => goTo(stepId as WizardStep)}
+      showStepper={currentStep !== "review"}
+    >
+      <div className="max-w-4xl mx-auto" data-testid="wizard-container">
+        <Card className="rounded-card shadow-card" data-testid="card-wizard">
           <CardHeader>
-            <CardTitle className="text-2xl" data-testid="text-step-title">
-              {currentStep === "budget" && "Set Your Budget"}
+            <CardTitle className="flex items-center gap-3" data-testid="text-step-title">
+              {currentStep === "budget" && (
+                <>
+                  <DollarSign className="h-6 w-6 text-primary" />
+                  Set your budget
+                </>
+              )}
               {currentStep === "borough" && (
                 <>
-                  <Building2 className="inline-block w-6 h-6 mr-2" data-testid="icon-borough" />
-                  Choose Your Boroughs
+                  <Building2 className="h-6 w-6 text-primary" />
+                  Choose your boroughs
                 </>
               )}
               {currentStep === "neighborhood" && (
                 <>
-                  <MapPin className="inline-block w-6 h-6 mr-2" data-testid="icon-neighborhood" />
-                  Select Neighborhoods
+                  <MapPin className="h-6 w-6 text-primary" />
+                  Select neighborhoods
                 </>
               )}
               {currentStep === "map" && (
                 <>
-                  <Map className="inline-block w-6 h-6 mr-2" data-testid="icon-map" />
-                  Pick Your Blocks
+                  <MapIcon className="h-6 w-6 text-primary" />
+                  Pick your blocks
+                </>
+              )}
+              {currentStep === "review" && (
+                <>
+                  <CheckCircle2 className="h-6 w-6 text-success" />
+                  Review your preferences
                 </>
               )}
             </CardTitle>
             <CardDescription data-testid="text-step-description">
-              {currentStep === "budget" && "What's your monthly rent budget?"}
+              {currentStep === "budget" && "What is your monthly rent budget?"}
               {currentStep === "borough" && "Which NYC boroughs interest you?"}
               {currentStep === "neighborhood" && "Select specific neighborhoods to explore"}
               {currentStep === "map" && "Click on blocks to add them to your search"}
+              {currentStep === "review" && "Review and edit your apartment search preferences"}
             </CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-6">
             {/* Budget Step */}
             {currentStep === "budget" && (
-              <div className="space-y-6" data-testid="step-budget">
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground" data-testid="text-budget-range">
-                      Budget Range
-                    </span>
-                    <span className="text-lg font-semibold" data-testid="text-budget-value">
-                      ${wizardState.budgetMin.toLocaleString()} - ${wizardState.budgetMax.toLocaleString()}
-                    </span>
-                  </div>
-                  <Slider
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="space-y-6"
+                data-testid="step-budget"
+              >
+                <div className="space-y-4 pt-8 pb-4">
+                  <RangeSlider
                     min={500}
                     max={10000}
-                    step={100}
+                    step={50}
                     value={[wizardState.budgetMin, wizardState.budgetMax]}
-                    onValueChange={([min, max]) =>
+                    onChange={([min, max]) =>
                       setWizardState((prev) => ({ ...prev, budgetMin: min, budgetMax: max }))
                     }
+                    formatValue={(v) => `$${v.toLocaleString()}`}
+                    ariaLabel={["Minimum budget", "Maximum budget"]}
                     data-testid="slider-budget"
                   />
                 </div>
-              </div>
+                <FormHint tooltip="Budget should include utilities and amenities. Most NYC apartments range from $1,500 to $6,000 per month.">
+                  Consider utilities and amenities in your range
+                </FormHint>
+              </motion.div>
             )}
 
             {/* Borough Step */}
             {currentStep === "borough" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="step-borough">
-                {boroughs.map((borough) => (
-                  <Card
-                    key={borough.id}
-                    className={`cursor-pointer transition-all hover-elevate ${
-                      wizardState.selectedBoroughs.includes(borough.id)
-                        ? "border-primary bg-primary/5"
-                        : ""
-                    }`}
-                    onClick={() => toggleBorough(borough.id)}
-                    data-testid={`card-borough-${borough.id}`}
-                  >
-                    <CardHeader className="space-y-1">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg" data-testid={`text-borough-${borough.id}`}>
-                          {borough.name}
-                        </CardTitle>
-                        {wizardState.selectedBoroughs.includes(borough.id) && (
-                          <Badge variant="default" data-testid={`badge-selected-${borough.id}`}>
-                            Selected
-                          </Badge>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                data-testid="step-borough"
+              >
+                {boroughs.map((borough) => {
+                  const isSelected = wizardState.selectedBoroughs.includes(borough.id);
+                  return (
+                    <motion.div
+                      key={borough.id}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      transition={{ duration: 0.18 }}
+                    >
+                      <Card
+                        className={cn(
+                          "cursor-pointer transition-all hover-elevate",
+                          isSelected && "border-primary bg-primary/5"
                         )}
-                      </div>
-                      <CardDescription data-testid={`text-neighborhoods-count-${borough.id}`}>
-                        {borough.neighborhoods.length} neighborhoods
-                      </CardDescription>
-                    </CardHeader>
-                  </Card>
-                ))}
-              </div>
+                        onClick={() => toggleBorough(borough.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            toggleBorough(borough.id);
+                          }
+                        }}
+                        tabIndex={0}
+                        role="button"
+                        aria-pressed={isSelected}
+                        data-testid={`card-borough-${borough.id}`}
+                      >
+                        <CardHeader className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-lg" data-testid={`text-borough-${borough.id}`}>
+                              {borough.name}
+                            </CardTitle>
+                            {isSelected && (
+                              <Badge variant="default" data-testid={`badge-selected-${borough.id}`}>
+                                Selected
+                              </Badge>
+                            )}
+                          </div>
+                          <CardDescription data-testid={`text-neighborhoods-count-${borough.id}`}>
+                            {borough.neighborhoods.length} neighborhoods
+                          </CardDescription>
+                        </CardHeader>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
             )}
 
             {/* Neighborhood Step */}
             {currentStep === "neighborhood" && (
-              <div className="space-y-4" data-testid="step-neighborhood">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="space-y-4"
+                data-testid="step-neighborhood"
+              >
                 {availableNeighborhoods.length === 0 ? (
-                  <p className="text-center text-muted-foreground" data-testid="text-no-boroughs">
-                    Please select at least one borough first
-                  </p>
+                  <EmptyState
+                    icon={MapPin}
+                    title="No boroughs selected"
+                    description="Please select at least one borough first"
+                    action={{
+                      label: "Go back to boroughs",
+                      onClick: back,
+                    }}
+                  />
                 ) : (
-                  wizardState.selectedBoroughs.map((boroughId) => {
-                    const borough = boroughs.find((b) => b.id === boroughId);
-                    if (!borough) return null;
+                  <>
+                    {/* Search Input */}
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="search"
+                        placeholder="Search neighborhoods..."
+                        value={neighborhoodSearch}
+                        onChange={(e) => setNeighborhoodSearch(e.target.value)}
+                        className="pl-9"
+                        data-testid="input-search-neighborhoods"
+                      />
+                    </div>
 
-                    return (
-                      <div key={borough.id} className="space-y-3" data-testid={`group-neighborhoods-${borough.id}`}>
-                        <h3 className="font-semibold text-sm text-muted-foreground" data-testid={`text-borough-title-${borough.id}`}>
-                          {borough.name}
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          {borough.neighborhoods.map((neighborhood) => (
-                            <div
-                              key={neighborhood.id}
-                              className="flex items-center space-x-2 p-3 rounded-md hover-elevate border"
-                              data-testid={`item-neighborhood-${neighborhood.id}`}
-                            >
-                              <Checkbox
-                                id={neighborhood.id}
-                                checked={wizardState.selectedNeighborhoods.includes(neighborhood.id)}
-                                onCheckedChange={() => toggleNeighborhood(neighborhood.id)}
-                                data-testid={`checkbox-neighborhood-${neighborhood.id}`}
-                              />
-                              <label
-                                htmlFor={neighborhood.id}
-                                className="text-sm flex-1 cursor-pointer"
-                                data-testid={`label-neighborhood-${neighborhood.id}`}
-                              >
-                                {neighborhood.name}
-                              </label>
-                            </div>
-                          ))}
-                        </div>
+                    {/* Selected Count and Clear */}
+                    {wizardState.selectedNeighborhoods.length > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground" data-testid="text-selected-count">
+                          Selected {wizardState.selectedNeighborhoods.length}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={clearAllNeighborhoods}
+                          data-testid="button-clear-all"
+                        >
+                          Clear all
+                        </Button>
                       </div>
-                    );
-                  })
+                    )}
+
+                    {/* Selected Badges */}
+                    {wizardState.selectedNeighborhoods.length > 0 && (
+                      <div className="flex flex-wrap gap-2" data-testid="container-selected-neighborhoods">
+                        {wizardState.selectedNeighborhoods.map((id) => {
+                          const neighborhood = availableNeighborhoods.find((n) => n.id === id);
+                          if (!neighborhood) return null;
+                          return (
+                            <Badge
+                              key={id}
+                              variant="secondary"
+                              className="gap-1 pr-1"
+                              data-testid={`badge-neighborhood-${id}`}
+                            >
+                              {neighborhood.name}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleNeighborhood(id);
+                                }}
+                                className="ml-1 hover-elevate rounded-full p-0.5"
+                                data-testid={`button-remove-neighborhood-${id}`}
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Neighborhood Grid */}
+                    {wizardState.selectedBoroughs.map((boroughId) => {
+                      const borough = boroughs.find((b) => b.id === boroughId);
+                      if (!borough) return null;
+
+                      const boroughNeighborhoods = filteredNeighborhoods.filter(
+                        (n) => n.boroughId === borough.id
+                      );
+
+                      if (boroughNeighborhoods.length === 0) return null;
+
+                      return (
+                        <div key={borough.id} className="space-y-3" data-testid={`group-neighborhoods-${borough.id}`}>
+                          <h3 className="font-semibold text-sm text-muted-foreground" data-testid={`text-borough-title-${borough.id}`}>
+                            {borough.name}
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {boroughNeighborhoods.map((neighborhood) => (
+                              <div
+                                key={neighborhood.id}
+                                className="flex items-center space-x-2 p-3 rounded-md hover-elevate border"
+                                data-testid={`item-neighborhood-${neighborhood.id}`}
+                              >
+                                <Checkbox
+                                  id={neighborhood.id}
+                                  checked={wizardState.selectedNeighborhoods.includes(neighborhood.id)}
+                                  onCheckedChange={() => toggleNeighborhood(neighborhood.id)}
+                                  data-testid={`checkbox-neighborhood-${neighborhood.id}`}
+                                />
+                                <label
+                                  htmlFor={neighborhood.id}
+                                  className="text-sm flex-1 cursor-pointer"
+                                  data-testid={`label-neighborhood-${neighborhood.id}`}
+                                >
+                                  {neighborhood.name}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </>
                 )}
-              </div>
+              </motion.div>
             )}
 
             {/* Map Step */}
             {currentStep === "map" && (
-              <div className="space-y-4" data-testid="step-map">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="space-y-4"
+                data-testid="step-map"
+              >
                 {!mapboxConfig?.token ? (
-                  <div className="h-96 w-full rounded-lg border flex items-center justify-center bg-muted/30" data-testid="map-error">
-                    <div className="text-center p-6 space-y-2">
-                      <p className="text-muted-foreground">Map not available</p>
-                      <p className="text-sm text-muted-foreground">
-                        Mapbox token is not configured. Set <code className="text-xs bg-background px-1 py-0.5 rounded">MAPBOX_TOKEN</code> to enable the map.
-                      </p>
-                    </div>
-                  </div>
+                  <EmptyState
+                    icon={MapIcon}
+                    title="Map not available"
+                    description="Mapbox token is not configured. Set MAPBOX_TOKEN to enable the map."
+                  />
                 ) : (
                   <div
                     ref={mapContainer}
-                    style={{ height: '520px', width: '100%', borderRadius: '16px' }}
-                    className="border overflow-hidden"
+                    style={{ height: '520px', width: '100%' }}
+                    className="rounded-card overflow-hidden border"
                     data-testid="map-container"
                   />
                 )}
@@ -551,14 +631,15 @@ export default function BlocksOnboardingWizard() {
                 {!mapboxConfig?.tilesUrl && mapboxConfig?.token && !mapError && (
                   <div className="text-sm text-muted-foreground text-center p-4 bg-muted/50 rounded-lg" data-testid="text-blocks-info">
                     <p>Interactive block selection requires custom tiles configuration.</p>
-                    <p className="mt-1">Set <code className="text-xs bg-background px-1 py-0.5 rounded">VITE_BLOCKS_TILES</code> environment variable to enable clickable blocks.</p>
                   </div>
                 )}
+                
+                {/* Selected Blocks */}
                 {wizardState.selectedBlocks.size > 0 && (
-                  <div className="space-y-2" data-testid="container-selected-blocks">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm text-muted-foreground" data-testid="text-blocks-label">
-                        Selected blocks: {wizardState.selectedBlocks.size}
+                  <div className="sticky bottom-0 bg-background border-t p-4 -mx-6 -mb-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium" data-testid="text-blocks-label">
+                        {selectedBoroughNames.join(", ")} • {selectedNeighborhoodNames.length} neighborhoods • {wizardState.selectedBlocks.size} blocks
                       </span>
                       <Button
                         variant="ghost"
@@ -571,19 +652,16 @@ export default function BlocksOnboardingWizard() {
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
                       {Array.from(wizardState.selectedBlocks).map((blockId) => (
-                        <Badge 
-                          key={blockId} 
-                          variant="secondary" 
+                        <Badge
+                          key={blockId}
+                          variant="secondary"
                           className="pr-1 gap-1"
                           data-testid={`badge-block-${blockId}`}
                         >
-                          {blockId}
+                          Block {blockId}
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRemoveBlock(blockId);
-                            }}
-                            className="ml-1 hover:bg-secondary-foreground/20 rounded-sm p-0.5"
+                            onClick={() => handleRemoveBlock(blockId)}
+                            className="ml-1 hover-elevate rounded-full p-0.5"
                             data-testid={`button-remove-block-${blockId}`}
                           >
                             <X className="h-3 w-3" />
@@ -593,115 +671,140 @@ export default function BlocksOnboardingWizard() {
                     </div>
                   </div>
                 )}
-              </div>
+              </motion.div>
             )}
 
-            {/* Complete Step */}
-            {currentStep === "complete" && (
-              <div className="space-y-6" data-testid="step-complete">
-                <div className="text-center space-y-2">
-                  <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center" data-testid="icon-complete">
-                    <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
+            {/* Review Step */}
+            {currentStep === "review" && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="space-y-6"
+                data-testid="step-review"
+              >
+                {/* Budget Summary */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold">Budget</h3>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => goTo('budget')}
+                      data-testid="button-edit-budget"
+                    >
+                      Edit
+                    </Button>
                   </div>
-                  <h3 className="text-xl font-semibold" data-testid="text-complete-title">Search Preferences Saved!</h3>
-                  <p className="text-muted-foreground" data-testid="text-complete-description">
-                    Here's a summary of your NYC apartment search preferences
+                  <p className="text-2xl font-bold tabular-nums">
+                    ${wizardState.budgetMin.toLocaleString()} – ${wizardState.budgetMax.toLocaleString()}
+                    <span className="text-sm font-normal text-muted-foreground ml-2">/month</span>
                   </p>
                 </div>
 
-                <div className="space-y-4">
-                  <div className="p-4 border rounded-lg" data-testid="summary-budget">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-sm font-medium">Budget Range</span>
-                    </div>
-                    <p className="text-lg font-semibold" data-testid="text-summary-budget">
-                      ${wizardState.budgetMin.toLocaleString()} - ${wizardState.budgetMax.toLocaleString()} / month
-                    </p>
+                {/* Boroughs Summary */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold">Boroughs</h3>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => goTo('borough')}
+                      data-testid="button-edit-boroughs"
+                    >
+                      Edit
+                    </Button>
                   </div>
-
-                  <div className="p-4 border rounded-lg" data-testid="summary-boroughs">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Building2 className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm font-medium">Selected Boroughs</span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedBoroughNames.map((name) => (
-                        <Badge key={name} variant="secondary" data-testid={`summary-badge-borough-${name}`}>
-                          {name}
-                        </Badge>
-                      ))}
-                    </div>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedBoroughNames.map((name) => (
+                      <Badge key={name} variant="secondary">{name}</Badge>
+                    ))}
                   </div>
-
-                  <div className="p-4 border rounded-lg" data-testid="summary-neighborhoods">
-                    <div className="flex items-center gap-2 mb-2">
-                      <MapPin className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm font-medium">Selected Neighborhoods</span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedNeighborhoodNames.map((name) => (
-                        <Badge key={name} variant="secondary" data-testid={`summary-badge-neighborhood-${name}`}>
-                          {name}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-
-                  {wizardState.selectedBlocks.size > 0 && (
-                    <div className="p-4 border rounded-lg" data-testid="summary-blocks">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Map className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">Selected Blocks</span>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {Array.from(wizardState.selectedBlocks).map((blockId) => (
-                          <Badge key={blockId} variant="secondary" data-testid={`summary-badge-block-${blockId}`}>
-                            {blockId}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
 
-                <Button 
-                  onClick={handleRestart} 
-                  variant="outline" 
-                  className="w-full"
-                  data-testid="button-restart"
-                >
-                  Start New Search
-                </Button>
-              </div>
+                {/* Neighborhoods Summary */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold">Neighborhoods</h3>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => goTo('neighborhood')}
+                      data-testid="button-edit-neighborhoods"
+                    >
+                      Edit
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedNeighborhoodNames.map((name) => (
+                      <Badge key={name} variant="secondary">{name}</Badge>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Blocks Summary */}
+                {wizardState.selectedBlocks.size > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold">Selected Blocks</h3>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => goTo('map')}
+                        data-testid="button-edit-blocks"
+                      >
+                        Edit
+                      </Button>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {wizardState.selectedBlocks.size} blocks selected
+                    </p>
+                  </div>
+                )}
+
+                {wizardState.selectedBlocks.size === 0 && (
+                  <EmptyState
+                    icon={MapIcon}
+                    title="No blocks selected"
+                    description="Add specific blocks to narrow your search, or proceed to see all available apartments in your selected neighborhoods."
+                    action={{
+                      label: "Select blocks",
+                      onClick: () => goTo('map'),
+                    }}
+                  />
+                )}
+              </motion.div>
             )}
 
-            {/* Navigation Buttons - hide on complete */}
-            {currentStep !== "complete" && (
-              <div className="flex justify-between pt-4 border-t" data-testid="navigation-buttons">
-                <Button
-                  variant="outline"
-                  onClick={handleBack}
-                  disabled={currentStep === "budget"}
-                  data-testid="button-back"
-                >
-                  <ChevronLeft className="w-4 h-4 mr-2" />
-                  Back
-                </Button>
-                <Button
-                  onClick={handleNext}
-                  disabled={!canProceed()}
-                  data-testid="button-next"
-                >
-                  {currentStep === "map" ? "Finish" : "Next"}
-                  <ChevronRight className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
-            )}
+            {/* Navigation Buttons */}
+            <div className="flex items-center justify-between pt-6 border-t">
+              <Button
+                variant="ghost"
+                onClick={back}
+                disabled={isFirstStep}
+                data-testid="button-back"
+              >
+                <ChevronLeft className="mr-2 h-4 w-4" />
+                Back
+              </Button>
+
+              <Button
+                onClick={handleNext}
+                disabled={!canProceed()}
+                data-testid="button-next"
+              >
+                {currentStep === "review" ? (
+                  "Find Apartments"
+                ) : (
+                  <>
+                    Next
+                    <ChevronRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
-    </div>
+    </AppShell>
   );
 }

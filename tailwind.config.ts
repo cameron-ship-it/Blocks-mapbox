@@ -4,14 +4,22 @@ export default {
   darkMode: ["class"],
   content: ["./client/index.html", "./client/src/**/*.{js,jsx,ts,tsx}"],
   theme: {
+    container: {
+      center: true,
+      padding: "1.25rem",
+      screens: {
+        "2xl": "960px",
+      },
+    },
     extend: {
       borderRadius: {
-        lg: ".5625rem", /* 9px */
-        md: ".375rem", /* 6px */
-        sm: ".1875rem", /* 3px */
+        lg: "1rem", /* 16px */
+        md: "0.75rem", /* 12px */
+        sm: "0.375rem", /* 6px */
+        card: "1.5rem", /* 24px for cards */
       },
       colors: {
-        // Flat / base colors (regular buttons)
+        // Flat / base colors
         background: "hsl(var(--background) / <alpha-value>)",
         foreground: "hsl(var(--foreground) / <alpha-value>)",
         border: "hsl(var(--border) / <alpha-value>)",
@@ -81,11 +89,36 @@ export default {
           busy: "rgb(239 68 68)",
           offline: "rgb(156 163 175)",
         },
+        // Blocks NYC specific colors
+        ink: "hsl(var(--ink) / <alpha-value>)",
+        "ink-2": "hsl(var(--ink-2) / <alpha-value>)",
+        charcoal: "hsl(var(--charcoal) / <alpha-value>)",
+        "gray-1": "hsl(var(--gray-1) / <alpha-value>)",
+        "gray-2": "hsl(var(--gray-2) / <alpha-value>)",
+        "gray-3": "hsl(var(--gray-3) / <alpha-value>)",
+        "accent-blue": "hsl(var(--accent-blue) / <alpha-value>)",
+        "accent-red": "hsl(var(--accent-red) / <alpha-value>)",
+        success: "hsl(var(--success) / <alpha-value>)",
+        warning: "hsl(var(--warning) / <alpha-value>)",
+        "text-primary": "hsl(var(--text-primary) / <alpha-value>)",
+        "text-secondary": "hsl(var(--text-secondary) / <alpha-value>)",
       },
       fontFamily: {
         sans: ["var(--font-sans)"],
+        display: ["var(--font-display)"],
         serif: ["var(--font-serif)"],
         mono: ["var(--font-mono)"],
+      },
+      fontSize: {
+        'h1': ['2rem', { lineHeight: '2.25rem', fontWeight: '700' }],
+        'h2': ['1.5rem', { lineHeight: '1.75rem', fontWeight: '700' }],
+        'h3': ['1.25rem', { lineHeight: '1.5rem', fontWeight: '600' }],
+        'body': ['1rem', { lineHeight: '1.5rem', fontWeight: '400' }],
+        'label': ['0.875rem', { lineHeight: '1.25rem', fontWeight: '500' }],
+      },
+      boxShadow: {
+        'card': 'var(--shadow-card)',
+        'popover': 'var(--shadow-popover)',
       },
       keyframes: {
         "accordion-down": {
@@ -96,10 +129,26 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "fade-in": {
+          from: { opacity: "0", transform: "translateY(8px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "fade-out": {
+          from: { opacity: "1", transform: "translateY(0)" },
+          to: { opacity: "0", transform: "translateY(8px)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "fade-in": "fade-in 0.2s ease-out",
+        "fade-out": "fade-out 0.2s ease-out",
+      },
+      transitionDuration: {
+        DEFAULT: '180ms',
+      },
+      transitionTimingFunction: {
+        DEFAULT: 'cubic-bezier(0.4, 0, 0.2, 1)',
       },
     },
   },
