@@ -2,12 +2,14 @@ import * as turf from '@turf/turf';
 import type { Feature, FeatureCollection, Polygon, MultiPolygon, BBox } from 'geojson';
 
 export interface NeighborhoodProperties {
-  ntacode?: string;
-  ntaname?: string;
-  NTACode?: string;
-  NTAName?: string;
-  boro_code?: string | number;
-  BoroCode?: string | number;
+  nta2020?: string;  // 2020 NTA code
+  ntaname?: string;  // Neighborhood name
+  borocode?: string | number;  // Borough code
+  boroname?: string;  // Borough name
+  ntaabbrev?: string;  // NTA abbreviation
+  ntatype?: string;  // NTA type
+  cdta2020?: string;  // Community District code
+  cdtaname?: string;  // Community District name
   [key: string]: any;
 }
 
@@ -26,9 +28,11 @@ export type NeighborhoodsGeoJSON = FeatureCollection<Polygon | MultiPolygon, Nei
 
 /**
  * Fetch NYC DCP Neighborhood Tabulation Areas for Manhattan
+ * Dataset: 2020 Neighborhood Tabulation Areas (NTAs)
+ * ID: 9nt8-h7nd
  */
 export async function fetchManhattanNeighborhoods(): Promise<NeighborhoodsGeoJSON> {
-  const url = 'https://data.cityofnewyork.us/resource/4hft-v355.geojson?boro_code=1&$limit=500';
+  const url = 'https://data.cityofnewyork.us/resource/9nt8-h7nd.geojson?borocode=1&$limit=500';
   
   try {
     const response = await fetch(url);
@@ -37,6 +41,7 @@ export async function fetchManhattanNeighborhoods(): Promise<NeighborhoodsGeoJSO
     }
     
     const data = await response.json();
+    console.log('Fetched Manhattan neighborhoods:', data.features?.length, 'features');
     return data as NeighborhoodsGeoJSON;
   } catch (error) {
     console.error('Error fetching Manhattan neighborhoods:', error);
@@ -55,9 +60,9 @@ export function processNeighborhoods(geojson: NeighborhoodsGeoJSON): Map<string,
   const neighborhoodMap = new Map<string, NeighborhoodData>();
 
   geojson.features.forEach((feature) => {
-    // Extract properties with fallbacks
-    const ntaCode = feature.properties.ntacode || feature.properties.NTACode || '';
-    const ntaName = feature.properties.ntaname || feature.properties.NTAName || '';
+    // Extract properties using 2020 NTA field names
+    const ntaCode = feature.properties.nta2020 || '';
+    const ntaName = feature.properties.ntaname || '';
     
     if (!ntaCode || !ntaName) {
       console.warn('Skipping feature without NTA code or name:', feature.properties);
@@ -80,6 +85,7 @@ export function processNeighborhoods(geojson: NeighborhoodsGeoJSON): Map<string,
     });
   });
 
+  console.log('Processed neighborhoods:', neighborhoodMap.size);
   return neighborhoodMap;
 }
 
