@@ -274,11 +274,23 @@ export default function BlocksOnboardingWizard() {
                 
                 // Listen for source data events
                 map.current.on('sourcedata', (e) => {
-                  if (e.sourceId === LAYER_SOURCE) {
-                    console.log('Source data event:', {
-                      sourceId: e.sourceId,
-                      isSourceLoaded: e.isSourceLoaded,
+                  if (e.sourceId === LAYER_SOURCE && e.isSourceLoaded) {
+                    console.log('✓ Blocks source data loaded');
+                    
+                    // Query a sample feature to see its structure
+                    const features = map.current?.querySourceFeatures(LAYER_SOURCE, {
+                      sourceLayer: LAYER_SOURCE_LAYER
                     });
+                    
+                    if (features && features.length > 0) {
+                      console.log('Sample feature from tileset:', {
+                        id: features[0].id,
+                        properties: features[0].properties,
+                        totalFeatures: features.length
+                      });
+                    } else {
+                      console.warn('No features found in tileset!');
+                    }
                   }
                 });
                 
@@ -299,11 +311,27 @@ export default function BlocksOnboardingWizard() {
             // Handle block clicks with proper feature-specific state  
             map.current.on("click", LAYER_ID, (e) => {
               const features = map.current?.queryRenderedFeatures(e.point, { layers: [LAYER_ID] });
-              if (!features || features.length === 0) return;
+              console.log('Click event - features found:', features?.length);
+              
+              if (!features || features.length === 0) {
+                console.log('No features found at click point');
+                return;
+              }
 
               const feature = features[0];
+              console.log('Feature clicked:', {
+                id: feature.id,
+                properties: feature.properties,
+                hasBlockId: 'block_id' in (feature.properties || {})
+              });
+              
               const rawId = feature.id ?? feature.properties?.block_id;
-              if (rawId === undefined || rawId === null) return;
+              console.log('Extracted ID:', rawId);
+              
+              if (rawId === undefined || rawId === null) {
+                console.warn('Feature has no ID! Cannot set feature state.');
+                return;
+              }
 
               const id = String(rawId);
 
