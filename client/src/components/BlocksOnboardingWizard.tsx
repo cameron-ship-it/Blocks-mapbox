@@ -453,9 +453,13 @@ export default function BlocksOnboardingWizard() {
                 sourceLayer: mapboxConfig.sourceLayer
               });
               
+              // Determine the best ID property for promoteId
+              // Priority: block_id > GEOID > let Mapbox use its internal ID
               const sourceConfig: any = {
                 type: "vector",
-                promoteId: "block_id" // Fallback to GEOID in click handler if block_id doesn't exist
+                // We'll try block_id first, but the tileset might use GEOID or have a string ID field
+                // Mapbox will use the tileset's native ID if promoteId property doesn't exist
+                promoteId: "block_id"
               };
               
               if (mapboxConfig.tilesUrl.startsWith("mapbox://")) {
@@ -468,7 +472,7 @@ export default function BlocksOnboardingWizard() {
               
               try {
                 map.current.addSource(LAYER_SOURCE, sourceConfig);
-                console.log('✓ Source added successfully');
+                console.log('✓ Source added successfully with promoteId:', sourceConfig.promoteId);
 
                 // Fill layer with Blocks NYC accent color
                 map.current.addLayer({
@@ -520,7 +524,7 @@ export default function BlocksOnboardingWizard() {
                 // Listen for source data events
                 map.current.on('sourcedata', (e) => {
                   if (e.sourceId === LAYER_SOURCE && e.isSourceLoaded) {
-                    console.log('✓ Blocks source data loaded');
+                    console.log('[QA] ✓ Blocks source data loaded');
                     
                     // Query a sample feature to see its structure
                     const features = map.current?.querySourceFeatures(LAYER_SOURCE, {
@@ -528,13 +532,24 @@ export default function BlocksOnboardingWizard() {
                     });
                     
                     if (features && features.length > 0) {
-                      console.log('Sample feature from tileset:', {
-                        id: features[0].id,
-                        properties: features[0].properties,
-                        totalFeatures: features.length
+                      const sample = features[0];
+                      console.log('[QA] Sample feature from tileset:', {
+                        'feature.id': sample.id,
+                        'has_block_id': sample.properties?.block_id !== undefined,
+                        'has_GEOID': sample.properties?.GEOID !== undefined,
+                        'properties': sample.properties,
+                        'totalFeatures': features.length
                       });
+                      
+                      // Verify promoteId is working
+                      if (sample.id === undefined) {
+                        console.error('[QA] WARNING: feature.id is undefined! promoteId may not be working correctly.');
+                        console.error('[QA] Check if the tileset has the property specified in promoteId:', sourceConfig.promoteId);
+                      } else {
+                        console.log('[QA] ✓ feature.id is set correctly:', sample.id);
+                      }
                     } else {
-                      console.warn('No features found in tileset!');
+                      console.warn('[QA] No features found in tileset!');
                     }
                   }
                 });
@@ -542,7 +557,7 @@ export default function BlocksOnboardingWizard() {
                 // Check if tiles are loading
                 map.current.on('data', (e) => {
                   if (e.sourceId === LAYER_SOURCE) {
-                    console.log('Data event for blocks source:', e.dataType);
+                    console.log('[QA] Data event for blocks source:', e.dataType);
                   }
                 });
               } catch (error) {
@@ -553,34 +568,65 @@ export default function BlocksOnboardingWizard() {
               console.log('No tiles URL configured, skipping custom layer');
             }
             
+            // Maintain Set of selected IDs (source of truth)
+            const selectedIds = new Set<string>();
+            
             const toggleFeature = (fid: string | number) => {
               const fidString = String(fid);
-              const selected = selectionStore.current.isSelected(fidString);
+              const wasSelected = selectedIds.has(fidString);
               
-              // Update SelectionStore
-              selectionStore.current.toggle(fidString);
+              // Toggle in Set
+              if (wasSelected) {
+                selectedIds.delete(fidString);
+              } else {
+                selectedIds.add(fidString);
+              }
               
-              // Update feature-state on map
+              // Update feature-state for ONLY this feature
               if (map.current) {
+                const featureId = !isNaN(Number(fid)) ? Number(fid) : fid;
                 map.current.setFeatureState(
-                  { source: LAYER_SOURCE, sourceLayer: LAYER_SOURCE_LAYER, id: fid },
-                  { selected: !selected }
+                  { source: LAYER_SOURCE, sourceLayer: LAYER_SOURCE_LAYER, id: featureId },
+                  { selected: !wasSelected }
                 );
               }
               
-              // Update selectedBlockIds ref for backward compatibility
-              if (selected) {
+              // Update SelectionStore
+              selectionStore.current.setSelected(fidString, !wasSelected);
+              
+              // Update backward compatibility ref
+              if (wasSelected) {
                 selectedBlockIds.current.delete(fidString);
               } else {
                 selectedBlockIds.current.add(fidString);
               }
+              
+              // QA check: Log selected count and verify isolation
+              console.log(`[QA] Toggled feature ${fidString}: ${wasSelected ? 'OFF' : 'ON'}`);
+              console.log(`[QA] Total selected count: ${selectedIds.size}`);
             };
 
             const reapplySelections = () => {
               if (!map.current) return;
               
-              // Use SelectionStore as the source of truth
-              Array.from(selectionStore.current.getSelected()).forEach(fidString => {
+              console.log(`[QA] Reapplying ${selectedIds.size} selections`);
+              
+              // Clear all feature states first to ensure clean slate
+              const allFeatures = map.current.querySourceFeatures(LAYER_SOURCE, {
+                sourceLayer: LAYER_SOURCE_LAYER
+              });
+              
+              allFeatures.forEach(feature => {
+                if (feature.id !== undefined && map.current) {
+                  map.current.setFeatureState(
+                    { source: LAYER_SOURCE, sourceLayer: LAYER_SOURCE_LAYER, id: feature.id },
+                    { selected: false }
+                  );
+                }
+              });
+              
+              // Reapply selections from Set
+              selectedIds.forEach(fidString => {
                 if (map.current) {
                   const fid = !isNaN(Number(fidString)) ? Number(fidString) : fidString;
                   map.current.setFeatureState(
@@ -590,37 +636,153 @@ export default function BlocksOnboardingWizard() {
                 }
               });
             };
+            
+            // Helper: Select all blocks
+            const selectAllBlocks = (ids: string[]) => {
+              if (!map.current) return;
+              console.log(`[QA] Selecting all ${ids.length} blocks`);
+              
+              // Clear current selection
+              selectedIds.clear();
+              
+              // Add all in chunks for smooth UI
+              const CHUNK_SIZE = 100;
+              for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+                const chunk = ids.slice(i, i + CHUNK_SIZE);
+                chunk.forEach(id => {
+                  selectedIds.add(id);
+                  const fid = !isNaN(Number(id)) ? Number(id) : id;
+                  if (map.current) {
+                    map.current.setFeatureState(
+                      { source: LAYER_SOURCE, sourceLayer: LAYER_SOURCE_LAYER, id: fid },
+                      { selected: true }
+                    );
+                  }
+                });
+              }
+              
+              // Sync with stores
+              selectionStore.current.selectAll(ids);
+              ids.forEach(id => selectedBlockIds.current.add(id));
+              
+              console.log(`[QA] Selected ${selectedIds.size} blocks`);
+            };
+            
+            // Helper: Clear all selections
+            const clearAllBlocks = () => {
+              if (!map.current) return;
+              console.log(`[QA] Clearing all ${selectedIds.size} selections`);
+              
+              selectedIds.forEach(fidString => {
+                const fid = !isNaN(Number(fidString)) ? Number(fidString) : fidString;
+                if (map.current) {
+                  map.current.setFeatureState(
+                    { source: LAYER_SOURCE, sourceLayer: LAYER_SOURCE_LAYER, id: fid },
+                    { selected: false }
+                  );
+                }
+              });
+              
+              selectedIds.clear();
+              selectionStore.current.clearAll();
+              selectedBlockIds.current.clear();
+              
+              console.log(`[QA] All selections cleared`);
+            };
+            
+            // Helper: Invert selection
+            const invertSelection = (allIds: string[]) => {
+              if (!map.current) return;
+              console.log(`[QA] Inverting selection from ${selectedIds.size} blocks`);
+              
+              const newSelection = new Set<string>();
+              
+              // Determine which blocks to toggle
+              allIds.forEach(id => {
+                if (!selectedIds.has(id)) {
+                  newSelection.add(id);
+                }
+              });
+              
+              // Clear all current selections
+              selectedIds.forEach(fidString => {
+                const fid = !isNaN(Number(fidString)) ? Number(fidString) : fidString;
+                if (map.current) {
+                  map.current.setFeatureState(
+                    { source: LAYER_SOURCE, sourceLayer: LAYER_SOURCE_LAYER, id: fid },
+                    { selected: false }
+                  );
+                }
+              });
+              
+              // Apply new selections in chunks
+              selectedIds.clear();
+              const CHUNK_SIZE = 100;
+              const newSelectionArray = Array.from(newSelection);
+              
+              for (let i = 0; i < newSelectionArray.length; i += CHUNK_SIZE) {
+                const chunk = newSelectionArray.slice(i, i + CHUNK_SIZE);
+                chunk.forEach(id => {
+                  selectedIds.add(id);
+                  const fid = !isNaN(Number(id)) ? Number(id) : id;
+                  if (map.current) {
+                    map.current.setFeatureState(
+                      { source: LAYER_SOURCE, sourceLayer: LAYER_SOURCE_LAYER, id: fid },
+                      { selected: true }
+                    );
+                  }
+                });
+              }
+              
+              // Sync with stores
+              selectionStore.current.invert(allIds);
+              selectedBlockIds.current.clear();
+              selectedIds.forEach(id => selectedBlockIds.current.add(id));
+              
+              console.log(`[QA] Inverted to ${selectedIds.size} blocks`);
+            };
 
             if (map.current) {
               map.current.on("click", LAYER_ID, (e) => {
                 const features = map.current?.queryRenderedFeatures(e.point, { layers: [LAYER_ID] });
-                console.log('Click event - features found:', features?.length);
                 
                 if (!features || features.length === 0) {
-                  console.log('No features found at click point');
+                  console.log('[QA] No features found at click point');
                   return;
                 }
 
+                // Extract stable ID from feature
                 const feature = features[0];
-                const fid = feature.id ?? feature.properties?.OBJECTID ?? feature.properties?.block_id ?? feature.properties?.GEOID;
+                // Try feature.id first (set by promoteId), then fallback properties
+                const fid = feature.id ?? feature.properties?.block_id ?? feature.properties?.GEOID;
                 
-                console.log('Feature clicked:', {
-                  extractedId: fid,
-                  featureId: feature.id,
-                  properties: feature.properties
+                console.log('[QA] Click event:', {
+                  featuresAtPoint: features.length,
+                  clickedFeatureId: fid,
+                  hasFeatureId: feature.id !== undefined,
+                  hasBlockId: feature.properties?.block_id !== undefined,
+                  hasGeoId: feature.properties?.GEOID !== undefined,
+                  currentlySelected: selectedIds.has(String(fid))
                 });
                 
                 if (fid === undefined || fid === null || fid === '') {
-                  console.warn('Feature has no valid ID! Cannot set feature state.');
+                  console.error('[QA] Feature has no valid ID! Cannot set feature state.');
+                  console.error('[QA] Feature properties:', feature.properties);
                   return;
                 }
 
+                // Toggle ONLY this feature
                 toggleFeature(fid);
+                
+                // QA: Verify no other features changed state
+                if (features.length > 1) {
+                  console.warn(`[QA] Multiple features (${features.length}) at click point - only toggling first`);
+                }
               });
 
               map.current.on("sourcedata", (e) => {
-                if (e.sourceId === LAYER_SOURCE && e.isSourceLoaded && selectedBlockIds.current.size > 0) {
-                  console.log('Reapplying selections after source data load');
+                if (e.sourceId === LAYER_SOURCE && e.isSourceLoaded && selectedIds.size > 0) {
+                  console.log('[QA] Source data loaded, reapplying selections');
                   reapplySelections();
                 }
               });
@@ -634,7 +796,7 @@ export default function BlocksOnboardingWizard() {
               });
             }
             
-            // Expose map debug info to window for troubleshooting
+            // Expose map debug info and helpers to window for troubleshooting
             if (typeof window !== 'undefined') {
               (window as any).debugMap = () => {
                 if (!map.current) return 'No map instance';
@@ -645,10 +807,23 @@ export default function BlocksOnboardingWizard() {
                   sources: Object.keys(style?.sources || {}),
                   layers: style?.layers?.map(l => ({ id: l.id, type: l.type, source: (l as any).source })) || [],
                   center: map.current.getCenter(),
-                  zoom: map.current.getZoom()
+                  zoom: map.current.getZoom(),
+                  selectedCount: selectedIds.size,
+                  selectedIds: Array.from(selectedIds)
                 };
               };
-              console.log('Debug: Call window.debugMap() in console to inspect map state');
+              
+              // Expose helper functions for manual testing
+              (window as any).mapHelpers = {
+                selectAll: selectAllBlocks,
+                clearAll: clearAllBlocks,
+                invert: invertSelection,
+                getSelectedIds: () => Array.from(selectedIds),
+                getSelectedCount: () => selectedIds.size
+              };
+              
+              console.log('[QA] Debug: Call window.debugMap() to inspect map state');
+              console.log('[QA] Debug: Call window.mapHelpers for selection utilities');
             }
           });
         } catch (error) {
