@@ -1,0 +1,95 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Block Selector</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.css" rel="stylesheet" />
+  <style>
+    html, body, #map {
+      height: 100%;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js"></script>
+  <script>
+    // STEP 1: Your Mapbox token goes here
+    mapboxgl.accessToken = '"pk.eyJ1IjoiY3JvYmVydHMyOCIsImEiOiJjbWdmdWo1ZjUwY2d1MmxweW8yYnJhbnp4In0.jfGjU3SdXK599EfgAtYnAw;
+
+    // STEP 2: Replace this with your GeoJSON data or tileset later
+    const blocksGeojson = {
+      "type": "FeatureCollection",
+      "features": [
+        {"type":"Feature","properties":{"name":"A"},"geometry":{"type":"Polygon","coordinates":[[[-73.99,40.73],[-73.98,40.73],[-73.98,40.74],[-73.99,40.74],[-73.99,40.73]]]}},
+        {"type":"Feature","properties":{"name":"B"},"geometry":{"type":"Polygon","coordinates":[[[-74.00,40.73],[-73.99,40.73],[-73.99,40.74],[-74.00,40.74],[-74.00,40.73]]]}}
+      ]
+    };
+
+    // STEP 3: Create the map
+    const map = new mapboxgl.Map({
+      container: 'map', // connects to <div id="map">
+      style: 'mapbox://styles/mapbox/light-v11',
+      center: [-73.99, 40.735],
+      zoom: 13
+    });
+
+    // STEP 4: Track the selected block
+    let lastId = null;
+
+    map.on('load', () => {
+      // Add your block data
+      map.addSource('blocks', {
+        type: 'geojson',
+        data: blocksGeojson,
+        generateId: true // gives each block a unique ID
+      });
+
+      // Add the block layer
+      map.addLayer({
+        id: 'blocks-fill',
+        type: 'fill',
+        source: 'blocks',
+        paint: {
+          'fill-color': [
+            'case',
+            ['boolean', ['feature-state', 'selected'], false],
+            '#2b8a3e', // selected color (green)
+            '#228be6'  // default color (blue)
+          ],
+          'fill-opacity': 0.6
+        }
+      });
+
+      // Add outlines around each block
+      map.addLayer({
+        id: 'blocks-outline',
+        type: 'line',
+        source: 'blocks',
+        paint: { 'line-color': '#222', 'line-width': 1 }
+      });
+
+      // STEP 5: Handle clicks
+      map.on('click', 'blocks-fill', (e) => {
+        const id = e.features[0].id;
+
+        // Unselect the old block
+        if (lastId !== null) {
+          map.setFeatureState({ source: 'blocks', id: lastId }, { selected: false });
+        }
+
+        // Select the new block
+        map.setFeatureState({ source: 'blocks', id }, { selected: true });
+        lastId = id;
+      });
+
+      // Change cursor to pointer when hovering blocks
+      map.on('mousemove', 'blocks-fill', () => map.getCanvas().style.cursor = 'pointer');
+      map.on('mouseleave', 'blocks-fill', () => map.getCanvas().style.cursor = '');
+    });
+  </script>
+</body>
+</html>
