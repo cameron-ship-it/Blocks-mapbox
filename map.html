@@ -20,14 +20,10 @@
     // STEP 1: Your Mapbox token goes here
     mapboxgl.accessToken = 'pk.eyJ1IjoiY3JvYmVydHMyOCIsImEiOiJjbWdmdWo1ZjUwY2d1MmxweW8yYnJhbnp4In0.jfGjU3SdXK599EfgAtYnAw';
 
-    // STEP 2: Replace this with your GeoJSON data or tileset later
-    const blocksGeojson = {
-      "type": "FeatureCollection",
-      "features": [
-        {"type":"Feature","properties":{"name":"A"},"geometry":{"type":"Polygon","coordinates":[[[-73.99,40.73],[-73.98,40.73],[-73.98,40.74],[-73.99,40.74],[-73.99,40.73]]]}},
-        {"type":"Feature","properties":{"name":"B"},"geometry":{"type":"Polygon","coordinates":[[[-74.00,40.73],[-73.99,40.73],[-73.99,40.74],[-74.00,40.74],[-74.00,40.73]]]}}
-      ]
-    };
+    // STEP 2: Configure your tileset
+    const TILESET_URL = 'mapbox://croberts28.cz4a6nlp';
+    const SOURCE_LAYER = 'blocks-ba0cxz';
+    const UNIQUE_ID_FIELD = 'GEOID'; // or block_id, BBL, etc.
 
     // STEP 3: Create the map
     const map = new mapboxgl.Map({
@@ -38,16 +34,11 @@
     });
 
     map.on('load', () => {
-      // Assign each feature a unique _uid
-      blocksGeojson.features.forEach((feature, index) => {
-        feature.properties._uid = `block-${index}`;
-      });
-
-      // Add your block data
+      // Add your block data as vector tiles
       map.addSource('blocks', {
-        type: 'geojson',
-        data: blocksGeojson,
-        generateId: true // gives each block a unique ID
+        type: 'vector',
+        url: TILESET_URL,
+        promoteId: UNIQUE_ID_FIELD // promotes this property to be the feature ID
       });
 
       // Add the block layer
@@ -55,6 +46,7 @@
         id: 'blocks-fill',
         type: 'fill',
         source: 'blocks',
+        'source-layer': SOURCE_LAYER,
         paint: {
           'fill-color': [
             'case',
@@ -67,16 +59,14 @@
       });
 
       // === HIGHLIGHT LAYER (add after your blocks-fill layer) ===
-      // If you have a unique property (e.g., GEOID, BBL), set uniqueField to that.
-      // If you don't know, leave it as '_uid' and do Step 2 below.
-      const uniqueField = '_uid'; // <- change to your unique property or '_uid' after Step 2
+      // Uses the unique field configured above
+      const uniqueField = UNIQUE_ID_FIELD;
 
       map.addLayer({
         id: 'blocks-highlight',
         type: 'line',
         source: 'blocks',
-        // include source-layer if your source is vector:
-        // 'source-layer': 'blocks',
+        'source-layer': SOURCE_LAYER,
         paint: {
           'line-width': 3,
           'line-color': '#111'
@@ -90,6 +80,7 @@
         id: 'blocks-outline',
         type: 'line',
         source: 'blocks',
+        'source-layer': SOURCE_LAYER,
         paint: { 'line-color': '#222', 'line-width': 1 }
       });
 
