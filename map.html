@@ -41,6 +41,11 @@
     let lastId = null;
 
     map.on('load', () => {
+      // Assign each feature a unique _uid
+      blocksGeojson.features.forEach((feature, index) => {
+        feature.properties._uid = `block-${index}`;
+      });
+
       // Add your block data
       map.addSource('blocks', {
         type: 'geojson',
@@ -67,7 +72,7 @@
       // === HIGHLIGHT LAYER (add after your blocks-fill layer) ===
       // If you have a unique property (e.g., GEOID, BBL), set uniqueField to that.
       // If you don't know, leave it as '_uid' and do Step 2 below.
-      const uniqueField = 'name'; // <- change to your unique property or '_uid' after Step 2
+      const uniqueField = '_uid'; // <- change to your unique property or '_uid' after Step 2
 
       map.addLayer({
         id: 'blocks-highlight',
