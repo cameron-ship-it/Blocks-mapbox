@@ -64,6 +64,25 @@
         }
       });
 
+      // === HIGHLIGHT LAYER (add after your blocks-fill layer) ===
+      // If you have a unique property (e.g., GEOID, BBL), set uniqueField to that.
+      // If you don't know, leave it as '_uid' and do Step 2 below.
+      const uniqueField = 'name'; // <- change to your unique property or '_uid' after Step 2
+
+      map.addLayer({
+        id: 'blocks-highlight',
+        type: 'line',
+        source: 'blocks',
+        // include source-layer if your source is vector:
+        // 'source-layer': 'blocks',
+        paint: {
+          'line-width': 3,
+          'line-color': '#111'
+        },
+        // Start with nothing selected
+        filter: ['==', ['get', uniqueField], '___none___']
+      });
+
       // Add outlines around each block
       map.addLayer({
         id: 'blocks-outline',
