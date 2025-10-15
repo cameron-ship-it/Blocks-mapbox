@@ -37,9 +37,6 @@
       zoom: 13
     });
 
-    // STEP 4: Track the selected block
-    let lastId = null;
-
     map.on('load', () => {
       // Assign each feature a unique _uid
       blocksGeojson.features.forEach((feature, index) => {
@@ -98,16 +95,21 @@
 
       // STEP 5: Handle clicks
       map.on('click', 'blocks-fill', (e) => {
-        const id = e.features[0].id;
+        const f = e.features && e.features[0];
+        if (!f) return;
 
-        // Unselect the old block
-        if (lastId !== null) {
-          map.setFeatureState({ source: 'blocks', id: lastId }, { selected: false });
+        // Prefer the field you configured in Step 1
+        const clickedValue = f.properties[uniqueField];
+
+        // Safety check: if undefined, log properties so you can pick a good field
+        if (clickedValue === undefined) {
+          console.log('Choose a unique field from these properties:', f.properties);
+          alert('The unique field "' + uniqueField + '" was not found on the feature. Check console.');
+          return;
         }
 
-        // Select the new block
-        map.setFeatureState({ source: 'blocks', id }, { selected: true });
-        lastId = id;
+        // Show only the clicked feature in the highlight layer
+        map.setFilter('blocks-highlight', ['==', ['get', uniqueField], clickedValue]);
       });
 
       // Change cursor to pointer when hovering blocks
