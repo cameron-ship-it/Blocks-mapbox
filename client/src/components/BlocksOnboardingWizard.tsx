@@ -5,7 +5,6 @@ import { RangeSlider } from "@/components/ui/range-slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { FormHint } from "@/components/ui/form-hint";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AppShell } from "@/components/layout/AppShell";
 import { useStep, type WizardStep } from "@/hooks/useStep";
@@ -945,10 +944,10 @@ export default function BlocksOnboardingWizard() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="space-y-8"
+                className="flex justify-center"
                 data-testid="step-budget"
               >
-                <div className="space-y-6 pt-8 pb-4">
+                <div className="w-full max-w-2xl pt-8">
                   <RangeSlider
                     min={500}
                     max={10000}
@@ -962,9 +961,6 @@ export default function BlocksOnboardingWizard() {
                     data-testid="slider-budget"
                   />
                 </div>
-                <FormHint tooltip="Budget should include utilities and amenities. Most NYC apartments range from $1,500 to $6,000 per month.">
-                  Consider utilities and amenities in your range
-                </FormHint>
               </motion.div>
             )}
 
@@ -973,9 +969,11 @@ export default function BlocksOnboardingWizard() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="grid grid-cols-1 md:grid-cols-2 gap-6"
+                className="flex justify-center"
                 data-testid="step-borough"
               >
+                <div className="w-full max-w-2xl grid grid-cols-1 md:grid-cols-2 gap-6">
+              
                 {boroughs.map((borough) => {
                   const isSelected = wizardState.selectedBoroughs.includes(borough.id);
                   return (
@@ -1019,6 +1017,7 @@ export default function BlocksOnboardingWizard() {
                     </motion.div>
                   );
                 })}
+                </div>
               </motion.div>
             )}
 
@@ -1027,9 +1026,11 @@ export default function BlocksOnboardingWizard() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="space-y-8"
+                className="flex justify-center"
                 data-testid="step-neighborhood"
               >
+                <div className="w-full max-w-2xl space-y-8">
+              
                 {isLoadingNeighborhoods ? (
                   <div className="text-center py-8 text-muted-foreground">
                     Loading Manhattan neighborhoods...
@@ -1187,6 +1188,7 @@ export default function BlocksOnboardingWizard() {
                     })}
                   </>
                 )}
+                </div>
               </motion.div>
             )}
 
@@ -1195,9 +1197,11 @@ export default function BlocksOnboardingWizard() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="space-y-8"
+                className="flex justify-center"
                 data-testid="step-map"
               >
+                <div className="w-full max-w-3xl space-y-8">
+              
                 {!mapboxConfig.token ? (
                   <EmptyState
                     icon={MapIcon}
@@ -1318,6 +1322,7 @@ export default function BlocksOnboardingWizard() {
                     </div>
                   </div>
                 )}
+                </div>
               </motion.div>
             )}
 
@@ -1326,9 +1331,11 @@ export default function BlocksOnboardingWizard() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="space-y-10"
+                className="flex justify-center"
                 data-testid="step-review"
               >
+                <div className="w-full max-w-2xl space-y-10">
+              
                 {/* Budget Summary */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -1419,11 +1426,12 @@ export default function BlocksOnboardingWizard() {
                     }}
                   />
                 )}
+                </div>
               </motion.div>
             )}
 
             {/* Navigation Buttons */}
-            <div className="flex items-center justify-between pt-10 border-t">
+            <div className="flex items-center justify-between pt-10">
               <Button
                 variant="ghost"
                 onClick={back}
