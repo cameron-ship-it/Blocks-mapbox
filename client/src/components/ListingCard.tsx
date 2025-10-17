@@ -27,7 +27,7 @@ export function ListingCard({ address, bedrooms, bathrooms, rent, images }: List
     <Card className="overflow-hidden hover-elevate transition-all" data-testid={`card-listing-${address.replace(/\s+/g, '-')}`}>
       <CardContent className="p-0">
         {/* Image Gallery */}
-        <div className="relative aspect-[4/3] bg-muted">
+        <div className="relative aspect-[4/3]">
           <img
             src={images[currentImageIndex]}
             alt={`${address} - Image ${currentImageIndex + 1}`}
@@ -39,7 +39,7 @@ export function ListingCard({ address, bedrooms, bathrooms, rent, images }: List
             <>
               <button
                 onClick={previousImage}
-                className="absolute left-2 bottom-2 bg-background/80 backdrop-blur-sm rounded-full p-2 hover-elevate transition-all"
+                className="absolute left-4 bottom-4 bg-background/80 backdrop-blur-sm rounded-full p-2 hover-elevate transition-all"
                 data-testid="button-previous-image"
                 aria-label="Previous image"
               >
@@ -49,7 +49,7 @@ export function ListingCard({ address, bedrooms, bathrooms, rent, images }: List
               </button>
               <button
                 onClick={nextImage}
-                className="absolute right-2 bottom-2 bg-background/80 backdrop-blur-sm rounded-full p-2 hover-elevate transition-all"
+                className="absolute right-4 bottom-4 bg-background/80 backdrop-blur-sm rounded-full p-2 hover-elevate transition-all"
                 data-testid="button-next-image"
                 aria-label="Next image"
               >
