@@ -37,34 +37,30 @@ export function ListingCard({ address, bedrooms, bathrooms, rent, images }: List
           {/* Image Navigation */}
           {images.length > 1 && (
             <>
-              {/* Left Arrow - Only show if not on first image */}
-              {currentImageIndex > 0 && (
-                <button
-                  onClick={previousImage}
-                  className="absolute left-4 bottom-4 bg-background/80 backdrop-blur-sm rounded-full p-2 hover-elevate transition-all"
-                  data-testid="button-previous-image"
-                  aria-label="Previous image"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-              )}
+              <button
+                onClick={previousImage}
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/90 backdrop-blur-sm rounded-full p-1.5 hover-elevate transition-all z-10"
+                data-testid="button-previous-image"
+                aria-label="Previous image"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
               
-              {/* Right Arrow - Always show when there are multiple images */}
               <button
                 onClick={nextImage}
-                className="absolute right-4 bottom-4 bg-background/80 backdrop-blur-sm rounded-full p-2 hover-elevate transition-all"
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/90 backdrop-blur-sm rounded-full p-1.5 hover-elevate transition-all z-10"
                 data-testid="button-next-image"
                 aria-label="Next image"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </button>
               
               {/* Image Indicators */}
-              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
                 {images.map((_, index) => (
                   <button
                     key={index}
@@ -73,7 +69,7 @@ export function ListingCard({ address, bedrooms, bathrooms, rent, images }: List
                       "w-1.5 h-1.5 rounded-full transition-all",
                       index === currentImageIndex 
                         ? "bg-background w-4" 
-                        : "bg-background/50"
+                        : "bg-background/60"
                     )}
                     aria-label={`Go to image ${index + 1}`}
                   />
@@ -84,7 +80,7 @@ export function ListingCard({ address, bedrooms, bathrooms, rent, images }: List
         </div>
 
         {/* Listing Details */}
-        <div className="p-4 space-y-3">
+        <div className="p-3 space-y-2">
           {/* Rent Price */}
           <div className="flex items-baseline justify-between">
             <div>
