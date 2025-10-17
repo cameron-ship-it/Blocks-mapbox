@@ -919,9 +919,9 @@ export default function BlocksOnboardingWizard() {
       onStepClick={(stepId) => goTo(stepId as WizardStep)}
       showStepper={currentStep !== "review"}
     >
-      <div className="max-w-4xl mx-auto space-y-10" data-testid="wizard-container">
+      <div className="max-w-4xl mx-auto space-y-12" data-testid="wizard-container">
         {/* Step Header */}
-        <div className="space-y-3">
+        <div className="space-y-4">
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3" data-testid="text-step-title">
             {currentStep === "budget" && "Set your budget"}
             {currentStep === "borough" && "Choose your boroughs"}
@@ -939,16 +939,16 @@ export default function BlocksOnboardingWizard() {
         </div>
 
         {/* Step Content */}
-        <div className="space-y-8">
+        <div className="space-y-10">
             {/* Budget Step */}
             {currentStep === "budget" && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="space-y-6"
+                className="space-y-8"
                 data-testid="step-budget"
               >
-                <div className="space-y-4 pt-8 pb-4">
+                <div className="space-y-6 pt-8 pb-4">
                   <RangeSlider
                     min={500}
                     max={10000}
@@ -973,7 +973,7 @@ export default function BlocksOnboardingWizard() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                className="grid grid-cols-1 md:grid-cols-2 gap-6"
                 data-testid="step-borough"
               >
                 {boroughs.map((borough) => {
@@ -1027,7 +1027,7 @@ export default function BlocksOnboardingWizard() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="space-y-4"
+                className="space-y-8"
                 data-testid="step-neighborhood"
               >
                 {isLoadingNeighborhoods ? (
@@ -1195,7 +1195,7 @@ export default function BlocksOnboardingWizard() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="space-y-4"
+                className="space-y-8"
                 data-testid="step-map"
               >
                 {!mapboxConfig.token ? (
@@ -1220,9 +1220,9 @@ export default function BlocksOnboardingWizard() {
                 ) : (
                   <>
                     {/* Selection Tools */}
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       <h3 className="text-sm font-medium">Selection Tools</h3>
-                      <div className="flex gap-2">
+                      <div className="flex gap-3">
                         <Button
                           variant={selectionMode === 'include' ? 'default' : 'ghost'}
                           size="sm"
@@ -1243,7 +1243,7 @@ export default function BlocksOnboardingWizard() {
                         </Button>
                       </div>
                       
-                      <div className="flex gap-2">
+                      <div className="flex gap-3">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -1326,7 +1326,7 @@ export default function BlocksOnboardingWizard() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="space-y-6"
+                className="space-y-10"
                 data-testid="step-review"
               >
                 {/* Budget Summary */}
@@ -1423,7 +1423,7 @@ export default function BlocksOnboardingWizard() {
             )}
 
             {/* Navigation Buttons */}
-            <div className="flex items-center justify-between pt-6 border-t">
+            <div className="flex items-center justify-between pt-10 border-t">
               <Button
                 variant="ghost"
                 onClick={back}
