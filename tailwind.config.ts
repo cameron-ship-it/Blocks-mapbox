@@ -16,7 +16,7 @@ export default {
         lg: "1rem", /* 16px */
         md: "0.75rem", /* 12px */
         sm: "0.375rem", /* 6px */
-        card: "1.5rem", /* 24px for cards */
+        card: "1rem", /* 16px - refined for fintech aesthetic */
       },
       colors: {
         // Flat / base colors

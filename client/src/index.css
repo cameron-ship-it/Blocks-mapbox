@@ -4,101 +4,108 @@
 @tailwind components;
 @tailwind utilities;
 
-/* LIGHT MODE - Blocks NYC Design System */
+/* LIGHT MODE - Refined Fintech Design System */
 :root {
-  --button-outline: rgba(0,0,0, .15);
-  --badge-outline: rgba(0,0,0, .10);
+  --button-outline: rgba(0,0,0, .12);
+  --badge-outline: rgba(0,0,0, .08);
 
   /* Automatic computation of border around primary / danger buttons */
   --opaque-button-border-intensity: -8; /* In terms of percentages */
 
   /* Backgrounds applied on top of other backgrounds when hovered/active */
-  --elevate-1: rgba(0,0,0, .04);
-  --elevate-2: rgba(0,0,0, .10);
+  --elevate-1: rgba(0,0,0, .03);
+  --elevate-2: rgba(0,0,0, .08);
 
-  /* Blocks NYC Color Palette */
-  --ink: 0 0% 4%; /* #0A0A0A */
-  --ink-2: 0 0% 7%; /* #111111 */
-  --charcoal: 0 0% 12%; /* #1E1E1E */
-  --gray-1: 0 0% 96%; /* #F5F5F5 */
-  --gray-2: 0 0% 93%; /* #EDEDED */
-  --gray-3: 0 0% 86%; /* #DCDCDC */
-  --accent-blue: 214 100% 62%; /* #3D8BFF */
-  --accent-red: 0 83% 70%; /* #FF6B6B */
-  --success: 142 76% 36%; /* #16A34A */
-  --warning: 38 92% 50%; /* #F59E0B */
-  --text-primary: 0 0% 4%; /* #0A0A0A */
-  --text-secondary: 0 0% 32%; /* #525252 */
-  --border-color: 0 0% 90%; /* #E5E7EB */
+  /* Refined Fintech Color Palette */
+  --slate-950: 222 47% 11%; /* #0F172A - Deep navy for text */
+  --slate-900: 222 47% 15%; /* #1E293B */
+  --slate-800: 215 25% 27%; /* #334155 */
+  --slate-700: 215 16% 47%; /* #64748B - Secondary text */
+  --slate-100: 214 32% 91%; /* #E2E8F0 */
+  --slate-50: 210 40% 98%; /* #F8FAFC - Subtle background */
+  
+  --indigo-600: 239 84% 67%; /* #6366F1 - Primary brand color */
+  --indigo-700: 243 75% 59%; /* #4F46E5 - Hover state */
+  --indigo-50: 226 100% 97%; /* #EEF2FF - Light accent */
+  
+  --emerald-600: 160 84% 39%; /* #10B981 - Success */
+  --rose-600: 0 84% 60%; /* #F43F5E - Destructive */
+  --amber-500: 38 92% 50%; /* #F59E0B - Warning */
+  
+  --neutral-50: 0 0% 98%; /* #FAFAFA */
+  --neutral-100: 0 0% 96%; /* #F5F5F5 */
+  --neutral-200: 0 0% 90%; /* #E5E5E5 */
+  --neutral-300: 0 0% 83%; /* #D4D4D4 */
+  --neutral-border: 220 13% 91%; /* Refined border */
 
   /* Semantic mappings */
-  --background: 0 0% 100%;
-  --foreground: var(--ink);
-  --border: var(--border-color);
+  --background: var(--slate-50);
+  --foreground: var(--slate-950);
+  --border: var(--neutral-border);
 
   --card: 0 0% 100%;
-  --card-foreground: var(--ink);
-  --card-border: var(--gray-3);
+  --card-foreground: var(--slate-950);
+  --card-border: var(--neutral-200);
 
-  --sidebar: var(--gray-1);
-  --sidebar-foreground: var(--ink);
-  --sidebar-border: var(--gray-3);
-  --sidebar-primary: var(--ink);
+  --sidebar: var(--neutral-50);
+  --sidebar-foreground: var(--slate-950);
+  --sidebar-border: var(--neutral-200);
+  --sidebar-primary: var(--slate-950);
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: var(--gray-2);
-  --sidebar-accent-foreground: var(--ink);
-  --sidebar-ring: var(--ink);
+  --sidebar-accent: var(--neutral-100);
+  --sidebar-accent-foreground: var(--slate-950);
+  --sidebar-ring: var(--indigo-600);
 
   --popover: 0 0% 100%;
-  --popover-foreground: var(--ink);
-  --popover-border: var(--gray-3);
+  --popover-foreground: var(--slate-950);
+  --popover-border: var(--neutral-200);
 
-  --primary: var(--accent-blue);
+  --primary: var(--indigo-600);
   --primary-foreground: 0 0% 100%;
 
-  --secondary: var(--gray-2);
-  --secondary-foreground: var(--ink);
+  --secondary: var(--neutral-100);
+  --secondary-foreground: var(--slate-950);
 
-  --muted: var(--gray-1);
-  --muted-foreground: var(--text-secondary);
+  --muted: var(--neutral-100);
+  --muted-foreground: var(--slate-700);
 
-  --accent: var(--accent-blue);
-  --accent-foreground: 0 0% 100%;
+  --accent: var(--indigo-50);
+  --accent-foreground: var(--indigo-700);
 
-  --destructive: var(--accent-red);
+  --destructive: var(--rose-600);
   --destructive-foreground: 0 0% 100%;
 
-  --input: var(--gray-3);
-  --ring: var(--accent-blue);
+  --input: var(--neutral-200);
+  --ring: var(--indigo-600);
 
-  --chart-1: 0 0% 20%;
-  --chart-2: 0 0% 35%;
-  --chart-3: 0 0% 50%;
-  --chart-4: 0 0% 65%;
-  --chart-5: 0 0% 80%;
+  --chart-1: 239 84% 67%;
+  --chart-2: 160 84% 39%;
+  --chart-3: 38 92% 50%;
+  --chart-4: 0 84% 60%;
+  --chart-5: 215 16% 47%;
 
   /* Typography */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-display: 'DM Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-serif: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
 
   /* Spacing and Layout */
-  --radius: 1rem; /* 16px default */
-  --radius-card: 1.5rem; /* 24px for cards and modals */
+  --radius: 0.75rem; /* 12px - slightly tighter */
+  --radius-card: 1rem; /* 16px - more refined than 24px */
   --spacing: 0.25rem;
 
-  /* Shadows - soft layered */
-  --shadow-card: 0px 2px 8px 0px rgba(0, 0, 0, 0.04), 0px 1px 2px 0px rgba(0, 0, 0, 0.06);
-  --shadow-popover: 0px 4px 16px 0px rgba(0, 0, 0, 0.08), 0px 2px 4px 0px rgba(0, 0, 0, 0.06);
-  --shadow-2xs: 0px 1px 2px 0px rgba(0, 0, 0, 0.05);
-  --shadow-xs: 0px 1px 3px 0px rgba(0, 0, 0, 0.08);
-  --shadow-sm: 0px 2px 4px -1px rgba(0, 0, 0, 0.06), 0px 1px 2px -1px rgba(0, 0, 0, 0.05);
-  --shadow: 0px 4px 6px -1px rgba(0, 0, 0, 0.08), 0px 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0px 6px 12px -2px rgba(0, 0, 0, 0.10), 0px 3px 6px -2px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0px 10px 20px -4px rgba(0, 0, 0, 0.12), 0px 4px 8px -2px rgba(0, 0, 0, 0.08);
-  --shadow-xl: 0px 20px 30px -6px rgba(0, 0, 0, 0.14), 0px 8px 12px -4px rgba(0, 0, 0, 0.10);
-  --shadow-2xl: 0px 25px 50px -12px rgba(0, 0, 0, 0.20);
+  /* Shadows - refined and subtle */
+  --shadow-card: 0px 1px 3px 0px rgba(0, 0, 0, 0.04), 0px 1px 2px 0px rgba(0, 0, 0, 0.03);
+  --shadow-popover: 0px 4px 16px 0px rgba(0, 0, 0, 0.06), 0px 2px 4px 0px rgba(0, 0, 0, 0.04);
+  --shadow-2xs: 0px 1px 2px 0px rgba(0, 0, 0, 0.03);
+  --shadow-xs: 0px 1px 3px 0px rgba(0, 0, 0, 0.06);
+  --shadow-sm: 0px 2px 4px -1px rgba(0, 0, 0, 0.04), 0px 1px 2px -1px rgba(0, 0, 0, 0.03);
+  --shadow: 0px 4px 6px -1px rgba(0, 0, 0, 0.06), 0px 2px 4px -1px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0px 6px 12px -2px rgba(0, 0, 0, 0.08), 0px 3px 6px -2px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0px 10px 20px -4px rgba(0, 0, 0, 0.10), 0px 4px 8px -2px rgba(0, 0, 0, 0.06);
+  --shadow-xl: 0px 20px 30px -6px rgba(0, 0, 0, 0.12), 0px 8px 12px -4px rgba(0, 0, 0, 0.08);
+  --shadow-2xl: 0px 25px 50px -12px rgba(0, 0, 0, 0.15);
 
   --tracking-normal: -0.02em;
 
@@ -127,59 +134,59 @@
 
 /* DARK MODE */
 .dark {
-  --button-outline: rgba(255,255,255, .15);
-  --badge-outline: rgba(255,255,255, .10);
+  --button-outline: rgba(255,255,255, .12);
+  --badge-outline: rgba(255,255,255, .08);
 
   --opaque-button-border-intensity: 9;
 
-  --elevate-1: rgba(255,255,255, .05);
-  --elevate-2: rgba(255,255,255, .12);
+  --elevate-1: rgba(255,255,255, .04);
+  --elevate-2: rgba(255,255,255, .10);
 
-  /* Dark mode colors */
-  --background: var(--ink);
-  --foreground: 0 0% 100%;
-  --border: 0 0% 20%;
+  /* Dark mode colors - refined */
+  --background: var(--slate-950);
+  --foreground: var(--slate-50);
+  --border: 215 25% 20%;
 
-  --card: var(--ink-2);
-  --card-foreground: 0 0% 100%;
-  --card-border: 0 0% 15%;
+  --card: var(--slate-900);
+  --card-foreground: var(--slate-50);
+  --card-border: 215 25% 20%;
 
-  --sidebar: 0 0% 5%;
-  --sidebar-foreground: 0 0% 100%;
-  --sidebar-border: 0 0% 15%;
-  --sidebar-primary: 0 0% 100%;
-  --sidebar-primary-foreground: 0 0% 0%;
-  --sidebar-accent: 0 0% 15%;
-  --sidebar-accent-foreground: 0 0% 100%;
-  --sidebar-ring: 0 0% 100%;
+  --sidebar: 222 47% 8%;
+  --sidebar-foreground: var(--slate-50);
+  --sidebar-border: 215 25% 20%;
+  --sidebar-primary: var(--slate-50);
+  --sidebar-primary-foreground: var(--slate-950);
+  --sidebar-accent: 215 25% 18%;
+  --sidebar-accent-foreground: var(--slate-50);
+  --sidebar-ring: var(--indigo-600);
 
-  --popover: var(--charcoal);
-  --popover-foreground: 0 0% 100%;
-  --popover-border: 0 0% 20%;
+  --popover: var(--slate-900);
+  --popover-foreground: var(--slate-50);
+  --popover-border: 215 25% 20%;
 
-  --primary: var(--accent-blue);
+  --primary: var(--indigo-600);
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 0 0% 20%;
-  --secondary-foreground: 0 0% 100%;
+  --secondary: 215 25% 20%;
+  --secondary-foreground: var(--slate-50);
 
-  --muted: 0 0% 15%;
-  --muted-foreground: 0 0% 65%;
+  --muted: 215 25% 18%;
+  --muted-foreground: var(--slate-700);
 
-  --accent: var(--accent-blue);
-  --accent-foreground: 0 0% 100%;
+  --accent: var(--indigo-50);
+  --accent-foreground: var(--indigo-700);
 
-  --destructive: var(--accent-red);
+  --destructive: var(--rose-600);
   --destructive-foreground: 0 0% 100%;
 
-  --input: 0 0% 30%;
-  --ring: var(--accent-blue);
+  --input: 215 25% 25%;
+  --ring: var(--indigo-600);
 
-  --chart-1: 0 0% 80%;
-  --chart-2: 0 0% 65%;
-  --chart-3: 0 0% 50%;
-  --chart-4: 0 0% 35%;
-  --chart-5: 0 0% 20%;
+  --chart-1: 239 84% 67%;
+  --chart-2: 160 84% 39%;
+  --chart-3: 38 92% 50%;
+  --chart-4: 0 84% 60%;
+  --chart-5: 215 16% 47%;
 
   --shadow-card: 0px 2px 8px 0px rgba(0, 0, 0, 0.30), 0px 1px 2px 0px rgba(0, 0, 0, 0.20);
   --shadow-popover: 0px 4px 16px 0px rgba(0, 0, 0, 0.40), 0px 2px 4px 0px rgba(0, 0, 0, 0.30);
@@ -223,7 +230,7 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 
-  /* Typography hierarchy - Blocks NYC */
+  /* Typography hierarchy - Refined fintech style */
   h1 {
     @apply text-[2rem] leading-[2.25rem] font-bold tracking-tight;
   }

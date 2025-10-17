@@ -10,6 +10,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### Fintech-Inspired Design Refresh (October 17, 2025)
+Updated the application's visual design to a more sophisticated fintech aesthetic while preserving all functionality:
+- **Color Palette**: Migrated from bright blue (#3D8BFF) to refined indigo (#6366F1) for primary actions
+- **Background System**: Changed from pure white to subtle off-white (#F8FAFC) for reduced eye strain
+- **Neutral Colors**: Upgraded to warmer, more sophisticated slate tones for better visual hierarchy
+- **Border Radii**: Refined card corners from 24px to 16px for a more professional appearance
+- **Success Color**: Shifted to refined emerald (#10B981) for selected blocks
+- **Typography**: Maintained Inter font family with enhanced hierarchy
+- **Design Inspiration**: Drew from Stripe, Plaid, Zillow, and Redfin for a trustworthy, modern aesthetic
+- **Functionality**: Zero changes to block selection, map interactions, or wizard flow - purely visual refinement
+
 ### Block Selection Refactoring (October 2025)
 Fixed the map block selection system to ensure clicking one block only selects that specific block:
 - **Issue**: Previously, clicking one block was selecting all blocks on the map
@@ -35,8 +46,9 @@ Fixed the map block selection system to ensure clicking one block only selects t
 **UI Component System**
 - **shadcn/ui** components built on Radix UI primitives
 - **Tailwind CSS** for styling with custom design tokens
-- **Design Philosophy**: Apple HIG-inspired minimalism with Material Design map interactions
-- **Component Approach**: Utility-first, map-focused design where clarity takes priority over decoration
+- **Design Philosophy**: Fintech-inspired sophistication with real estate listing platform polish
+- **Component Approach**: Utility-first, map-focused design with refined visual hierarchy
+- **Color System**: Deep indigo primary (#6366F1), sophisticated slate neutrals, subtle off-white backgrounds
 - **Accessibility**: Full keyboard navigation and ARIA compliance through Radix UI primitives
 
 **State Management & Data Fetching**
