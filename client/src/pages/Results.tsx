@@ -3,6 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
+import { ListingCard } from "@/components/ListingCard";
+import image1 from "@assets/image 1_1760722457385.webp";
+import image2 from "@assets/image 2_1760722457383.webp";
 
 export default function Results() {
   const [, setLocation] = useLocation();
@@ -15,6 +18,18 @@ export default function Results() {
     neighborhoods: [] as string[],
     blockCount: 0
   };
+
+  // Test listing - can be easily removed later
+  const testListings = [
+    {
+      id: "test-1",
+      address: "47 East 1st Street #3R",
+      bedrooms: 2,
+      bathrooms: 2,
+      rent: 5795,
+      images: [image1, image2],
+    },
+  ];
 
   const handleBackToSearch = () => {
     setLocation("/");
@@ -76,9 +91,18 @@ export default function Results() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
-          {/* Placeholder for future listing cards */}
+          {/* Listings Grid */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3" data-testid="container-listings">
-            {/* Listings will be rendered here */}
+            {testListings.map((listing) => (
+              <ListingCard
+                key={listing.id}
+                address={listing.address}
+                bedrooms={listing.bedrooms}
+                bathrooms={listing.bathrooms}
+                rent={listing.rent}
+                images={listing.images}
+              />
+            ))}
           </div>
         </motion.div>
       </div>
