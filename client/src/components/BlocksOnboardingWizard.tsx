@@ -38,6 +38,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import * as turf from "@turf/turf";
+import { useLocation } from "wouter";
 
 // Mapbox layer constants
 const LAYER_SOURCE = "blocks";
@@ -69,6 +70,7 @@ const WIZARD_STEPS = [
 
 export default function BlocksOnboardingWizard() {
   const { currentStep, next, back, goTo, isFirstStep, isLastStep } = useStep('budget');
+  const [, setLocation] = useLocation();
   
   // Initial state for reset
   const initialWizardState: WizardState = {
@@ -908,7 +910,11 @@ export default function BlocksOnboardingWizard() {
 
   const handleNext = () => {
     if (canProceed()) {
-      next();
+      if (currentStep === "review") {
+        setLocation("/results");
+      } else {
+        next();
+      }
     }
   };
 
