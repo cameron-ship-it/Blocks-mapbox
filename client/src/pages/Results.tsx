@@ -1,8 +1,7 @@
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, MapPin, DollarSign, Home } from "lucide-react";
+import { ChevronLeft, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function Results() {
@@ -37,11 +36,11 @@ export default function Results() {
               Back to Search
             </Button>
 
-            <div className="flex items-center gap-6 text-sm">
+            <div className="flex items-center gap-6">
               <div className="flex items-center gap-2" data-testid="text-budget-summary">
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium tabular-nums">
+                <span className="font-bold tabular-nums">
                   ${searchPreferences.budgetMin.toLocaleString()} – ${searchPreferences.budgetMax.toLocaleString()}
+                  <span className="text-sm font-normal text-muted-foreground ml-2">/month</span>
                 </span>
               </div>
               {searchPreferences.boroughs.length > 0 && (
@@ -77,36 +76,9 @@ export default function Results() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2" data-testid="text-results-title">
-              Apartment Listings
-            </h1>
-            <p className="text-muted-foreground" data-testid="text-results-description">
-              Listings matching your preferences will appear below
-            </p>
-          </div>
-
-          {/* Empty state - where listings will go */}
-          <div className="space-y-4">
-            <Card className="border-dashed" data-testid="card-empty-state">
-              <CardContent className="flex flex-col items-center justify-center py-16 px-6 text-center">
-                <div className="rounded-full bg-muted p-4 mb-4">
-                  <Home className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">
-                  Ready for Listings
-                </h3>
-                <p className="text-sm text-muted-foreground max-w-md">
-                  This space is reserved for apartment listings. Listings will be displayed here as they become available.
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Placeholder for future listing cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3" data-testid="container-listings">
-              {/* Listings will be rendered here */}
-            </div>
+          {/* Placeholder for future listing cards */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3" data-testid="container-listings">
+            {/* Listings will be rendered here */}
           </div>
         </motion.div>
       </div>
