@@ -14,6 +14,7 @@ export interface AppShellProps {
   onStepClick?: (stepId: string) => void;
   showStepper?: boolean;
   className?: string;
+  onLogoClick?: () => void;
 }
 
 /**
@@ -31,6 +32,7 @@ export const AppShell: React.FC<AppShellProps> = ({
   onStepClick,
   showStepper = true,
   className,
+  onLogoClick,
 }) => {
   const { theme, setTheme } = useTheme();
 
@@ -45,13 +47,23 @@ export const AppShell: React.FC<AppShellProps> = ({
         <div className="container mx-auto">
           <div className="flex h-16 items-center justify-between">
             {/* Logo/Wordmark */}
-            <Link 
-              href="/" 
-              className="text-xl font-display font-bold tracking-tight text-foreground transition-opacity hover:opacity-70" 
-              data-testid="link-home"
-            >
-              Blocks NYC
-            </Link>
+            {onLogoClick ? (
+              <button
+                onClick={onLogoClick}
+                className="text-xl font-display font-bold tracking-tight text-foreground transition-opacity hover:opacity-70 cursor-pointer"
+                data-testid="button-logo-reset"
+              >
+                Blocks NYC
+              </button>
+            ) : (
+              <Link 
+                href="/" 
+                className="text-xl font-display font-bold tracking-tight text-foreground transition-opacity hover:opacity-70" 
+                data-testid="link-home"
+              >
+                Blocks NYC
+              </Link>
+            )}
 
             {/* Step Indicator (Center) - Hidden on mobile */}
             {showStepper && steps && currentStep && (

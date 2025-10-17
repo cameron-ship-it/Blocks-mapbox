@@ -69,13 +69,17 @@ const WIZARD_STEPS = [
 
 export default function BlocksOnboardingWizard() {
   const { currentStep, next, back, goTo, isFirstStep, isLastStep } = useStep('budget');
-  const [wizardState, setWizardState] = useState<WizardState>({
+  
+  // Initial state for reset
+  const initialWizardState: WizardState = {
     budgetMin: 1500,
     budgetMax: 4000,
     selectedBoroughs: [],
     selectedNeighborhoods: [],
     selectedBlocks: new Set<string>(),
-  });
+  };
+  
+  const [wizardState, setWizardState] = useState<WizardState>(initialWizardState);
 
   // Neighborhood search
   const [neighborhoodSearch, setNeighborhoodSearch] = useState("");
@@ -184,6 +188,46 @@ export default function BlocksOnboardingWizard() {
         ? prev.selectedNeighborhoods.filter((id) => id !== neighborhoodId)
         : [...prev.selectedNeighborhoods, neighborhoodId],
     }));
+  };
+
+  // Reset entire wizard to initial state
+  const handleReset = () => {
+    // Reset wizard state to initial values
+    setWizardState(initialWizardState);
+    
+    // Clear neighborhood search
+    setNeighborhoodSearch("");
+    
+    // Clear selection store
+    selectionStore.current.clearAll();
+    
+    // Clear selected block IDs ref
+    selectedBlockIds.current.clear();
+    
+    // Reset selection mode to include
+    selectionStore.current.setMode('include');
+    setSelectionMode('include');
+    
+    // Clear all feature states on the map
+    if (map.current) {
+      const features = map.current.querySourceFeatures(LAYER_SOURCE, {
+        sourceLayer: mapboxConfig.sourceLayer
+      });
+      
+      features.forEach(feature => {
+        const blockId = feature.id ?? feature.properties?.block_id ?? feature.properties?.GEOID;
+        if (blockId) {
+          const fid = !isNaN(Number(blockId)) ? Number(blockId) : blockId;
+          map.current?.setFeatureState(
+            { source: LAYER_SOURCE, sourceLayer: mapboxConfig.sourceLayer, id: fid },
+            { selected: false }
+          );
+        }
+      });
+    }
+    
+    // Return to first step
+    goTo('budget');
   };
 
   // Focus map on selected neighborhoods (Manhattan neighborhoods from API)
@@ -917,6 +961,7 @@ export default function BlocksOnboardingWizard() {
       steps={WIZARD_STEPS}
       onStepClick={(stepId) => goTo(stepId as WizardStep)}
       showStepper={currentStep !== "review"}
+      onLogoClick={handleReset}
     >
       <div className="max-w-4xl mx-auto space-y-12" data-testid="wizard-container">
         {/* Step Header */}
