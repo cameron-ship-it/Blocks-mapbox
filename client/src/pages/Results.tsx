@@ -10,13 +10,14 @@ import image2 from "@assets/image 2_1760722457383.webp";
 export default function Results() {
   const [, setLocation] = useLocation();
 
-  // Mock preferences for now - will be passed via location state or context later
+  // Parse search preferences from URL params
+  const params = new URLSearchParams(window.location.search);
   const searchPreferences = {
-    budgetMin: 1500,
-    budgetMax: 4000,
-    boroughs: [] as string[],
-    neighborhoods: [] as string[],
-    blockCount: 0
+    budgetMin: parseInt(params.get('budgetMin') || '1500'),
+    budgetMax: parseInt(params.get('budgetMax') || '4000'),
+    boroughs: params.get('boroughs')?.split(',').filter(Boolean) || [],
+    neighborhoods: params.get('neighborhoods')?.split(',').filter(Boolean) || [],
+    blockCount: parseInt(params.get('blockCount') || '0'),
   };
 
   // Test listing - can be easily removed later

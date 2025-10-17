@@ -911,7 +911,15 @@ export default function BlocksOnboardingWizard() {
   const handleNext = () => {
     if (canProceed()) {
       if (currentStep === "review") {
-        setLocation("/results");
+        // Pass search preferences via URL params
+        const params = new URLSearchParams({
+          budgetMin: wizardState.budgetMin.toString(),
+          budgetMax: wizardState.budgetMax.toString(),
+          boroughs: wizardState.selectedBoroughs.join(','),
+          neighborhoods: wizardState.selectedNeighborhoods.join(','),
+          blockCount: wizardState.selectedBlocks.size.toString(),
+        });
+        setLocation(`/results?${params.toString()}`);
       } else {
         next();
       }
