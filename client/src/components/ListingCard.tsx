@@ -37,16 +37,21 @@ export function ListingCard({ address, bedrooms, bathrooms, rent, images }: List
           {/* Image Navigation */}
           {images.length > 1 && (
             <>
-              <button
-                onClick={previousImage}
-                className="absolute left-4 bottom-4 bg-background/80 backdrop-blur-sm rounded-full p-2 hover-elevate transition-all"
-                data-testid="button-previous-image"
-                aria-label="Previous image"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
+              {/* Left Arrow - Only show if not on first image */}
+              {currentImageIndex > 0 && (
+                <button
+                  onClick={previousImage}
+                  className="absolute left-4 bottom-4 bg-background/80 backdrop-blur-sm rounded-full p-2 hover-elevate transition-all"
+                  data-testid="button-previous-image"
+                  aria-label="Previous image"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+              )}
+              
+              {/* Right Arrow - Always show when there are multiple images */}
               <button
                 onClick={nextImage}
                 className="absolute right-4 bottom-4 bg-background/80 backdrop-blur-sm rounded-full p-2 hover-elevate transition-all"
