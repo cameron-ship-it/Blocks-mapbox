@@ -10,6 +10,27 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### Minimal Fintech Redesign - Final Polish (October 17, 2025)
+Pushed the design even further toward minimal perfection by removing all unnecessary visual elements:
+- **Layout Simplification**: 
+  - Removed all Card borders and shadows from wizard steps
+  - Removed FormHint helper text and border lines from navigation
+  - Centered all step content with max-width containers (2xl for most steps, 3xl for map)
+- **Input Redesign**: Changed to borderless with subtle bottom border only, cleaner focus states
+- **Progress Indicator**: Simplified to text-based horizontal breadcrumb with "/" separators
+  - Current step: bold weight
+  - Completed steps: check icon + muted color
+  - Future steps: lighter muted color
+- **Spacing System**: Increased vertical breathing room (32-40px between major sections)
+  - space-y-12 for main container sections
+  - space-y-10 for step content
+  - gap-6 for grid layouts
+  - pt-10 for navigation separation
+- **Header**: Minimal top bar with wordmark (left), centered stepper (middle), theme toggle (right)
+- **Footer**: Borderless with subtle footer links
+- **Result**: Ultra-clean, centered, breathable interface inspired by Linear and modern fintech products
+- **Functionality**: All block selection, map interactions, and wizard flow fully preserved
+
 ### Fintech-Inspired Design Refresh (October 17, 2025)
 Updated the application's visual design to a more sophisticated fintech aesthetic while preserving all functionality:
 - **Color Palette**: Migrated from bright blue (#3D8BFF) to refined indigo (#6366F1) for primary actions
