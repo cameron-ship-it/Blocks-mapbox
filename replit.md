@@ -10,6 +10,19 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### Logo Reset Functionality (October 17, 2025)
+Added complete wizard reset capability when clicking the "Blocks NYC" logo:
+- **User Experience**: Clicking the logo resets the entire wizard and returns to the budget step
+- **State Reset**: Clears all selections (budget, boroughs, neighborhoods, map blocks)
+- **Implementation**:
+  - `handleReset()` function in BlocksOnboardingWizard clears all wizard state
+  - Resets budget to defaults ($1500-$4000)
+  - Clears selectionStore and map feature states
+  - Resets selection mode to 'include'
+  - Returns to first step ('budget')
+  - Logo converted from Link to button to avoid React hook issues
+- **Testing**: End-to-end verified - works correctly from any wizard step
+
 ### Minimal Fintech Redesign - Final Polish (October 17, 2025)
 Pushed the design even further toward minimal perfection by removing all unnecessary visual elements:
 - **Layout Simplification**: 
