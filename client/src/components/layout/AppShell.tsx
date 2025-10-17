@@ -47,23 +47,14 @@ export const AppShell: React.FC<AppShellProps> = ({
         <div className="container mx-auto">
           <div className="flex h-16 items-center justify-between">
             {/* Logo/Wordmark */}
-            {onLogoClick ? (
-              <button
-                onClick={onLogoClick}
-                className="text-xl font-display font-bold tracking-tight text-foreground transition-opacity hover:opacity-70 cursor-pointer"
-                data-testid="button-logo-reset"
-              >
-                Blocks NYC
-              </button>
-            ) : (
-              <Link 
-                href="/" 
-                className="text-xl font-display font-bold tracking-tight text-foreground transition-opacity hover:opacity-70" 
-                data-testid="link-home"
-              >
-                Blocks NYC
-              </Link>
-            )}
+            <button
+              type="button"
+              onClick={onLogoClick || (() => {})}
+              className="text-xl font-display font-bold tracking-tight text-foreground transition-opacity hover:opacity-70 cursor-pointer bg-transparent border-none p-0"
+              data-testid="button-logo-reset"
+            >
+              Blocks NYC
+            </button>
 
             {/* Step Indicator (Center) - Hidden on mobile */}
             {showStepper && steps && currentStep && (
