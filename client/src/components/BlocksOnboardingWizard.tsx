@@ -31,7 +31,8 @@ import {
   CheckCircle2,
   DollarSign,
   RotateCcw,
-  Layers
+  Layers,
+  Check
 } from "lucide-react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -918,51 +919,27 @@ export default function BlocksOnboardingWizard() {
       onStepClick={(stepId) => goTo(stepId as WizardStep)}
       showStepper={currentStep !== "review"}
     >
-      <div className="max-w-4xl mx-auto" data-testid="wizard-container">
-        <Card className="rounded-card shadow-card" data-testid="card-wizard">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3" data-testid="text-step-title">
-              {currentStep === "budget" && (
-                <>
-                  <DollarSign className="h-6 w-6 text-primary" />
-                  Set your budget
-                </>
-              )}
-              {currentStep === "borough" && (
-                <>
-                  <Building2 className="h-6 w-6 text-primary" />
-                  Choose your boroughs
-                </>
-              )}
-              {currentStep === "neighborhood" && (
-                <>
-                  <MapPin className="h-6 w-6 text-primary" />
-                  Select neighborhoods
-                </>
-              )}
-              {currentStep === "map" && (
-                <>
-                  <MapIcon className="h-6 w-6 text-primary" />
-                  Pick your blocks
-                </>
-              )}
-              {currentStep === "review" && (
-                <>
-                  <CheckCircle2 className="h-6 w-6 text-success" />
-                  Review your preferences
-                </>
-              )}
-            </CardTitle>
-            <CardDescription data-testid="text-step-description">
-              {currentStep === "budget" && "What is your monthly rent budget?"}
-              {currentStep === "borough" && "Which NYC boroughs interest you?"}
-              {currentStep === "neighborhood" && "Select specific neighborhoods to explore"}
-              {currentStep === "map" && "Click on blocks to add them to your search"}
-              {currentStep === "review" && "Review and edit your apartment search preferences"}
-            </CardDescription>
-          </CardHeader>
+      <div className="max-w-4xl mx-auto space-y-10" data-testid="wizard-container">
+        {/* Step Header */}
+        <div className="space-y-3">
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3" data-testid="text-step-title">
+            {currentStep === "budget" && "Set your budget"}
+            {currentStep === "borough" && "Choose your boroughs"}
+            {currentStep === "neighborhood" && "Select neighborhoods"}
+            {currentStep === "map" && "Pick your blocks"}
+            {currentStep === "review" && "Review your preferences"}
+          </h1>
+          <p className="text-muted-foreground" data-testid="text-step-description">
+            {currentStep === "budget" && "What is your monthly rent budget?"}
+            {currentStep === "borough" && "Which NYC boroughs interest you?"}
+            {currentStep === "neighborhood" && "Select specific neighborhoods to explore"}
+            {currentStep === "map" && "Click on blocks to add them to your search"}
+            {currentStep === "review" && "Review and edit your apartment search preferences"}
+          </p>
+        </div>
 
-          <CardContent className="space-y-6">
+        {/* Step Content */}
+        <div className="space-y-8">
             {/* Budget Step */}
             {currentStep === "budget" && (
               <motion.div
@@ -1008,10 +985,10 @@ export default function BlocksOnboardingWizard() {
                       whileTap={{ scale: 0.98 }}
                       transition={{ duration: 0.18 }}
                     >
-                      <Card
+                      <div
                         className={cn(
-                          "cursor-pointer transition-all hover-elevate",
-                          isSelected && "border-primary bg-primary/5"
+                          "cursor-pointer transition-all p-6 rounded-lg hover-elevate",
+                          isSelected && "bg-primary/5"
                         )}
                         onClick={() => toggleBorough(borough.id)}
                         onKeyDown={(e) => {
@@ -1025,22 +1002,20 @@ export default function BlocksOnboardingWizard() {
                         aria-pressed={isSelected}
                         data-testid={`card-borough-${borough.id}`}
                       >
-                        <CardHeader className="space-y-1">
+                        <div className="space-y-1">
                           <div className="flex items-center justify-between">
-                            <CardTitle className="text-lg" data-testid={`text-borough-${borough.id}`}>
+                            <h3 className="text-lg font-semibold" data-testid={`text-borough-${borough.id}`}>
                               {borough.name}
-                            </CardTitle>
+                            </h3>
                             {isSelected && (
-                              <Badge variant="default" data-testid={`badge-selected-${borough.id}`}>
-                                Selected
-                              </Badge>
+                              <Check className="h-5 w-5 text-primary" data-testid={`badge-selected-${borough.id}`} />
                             )}
                           </div>
-                          <CardDescription data-testid={`text-neighborhoods-count-${borough.id}`}>
+                          <p className="text-sm text-muted-foreground" data-testid={`text-neighborhoods-count-${borough.id}`}>
                             {borough.neighborhoods.length} neighborhoods
-                          </CardDescription>
-                        </CardHeader>
-                      </Card>
+                          </p>
+                        </div>
+                      </div>
                     </motion.div>
                   );
                 })}
@@ -1188,7 +1163,7 @@ export default function BlocksOnboardingWizard() {
                             {boroughNeighborhoods.map((neighborhood) => (
                               <div
                                 key={neighborhood.id}
-                                className="flex items-center space-x-2 p-3 rounded-md hover-elevate border"
+                                className="flex items-center space-x-2 p-3 rounded-lg hover-elevate"
                                 data-testid={`item-neighborhood-${neighborhood.id}`}
                               >
                                 <Checkbox
@@ -1244,64 +1219,58 @@ export default function BlocksOnboardingWizard() {
                   </div>
                 ) : (
                   <>
-                    {/* Mode Controls */}
-                    <Card>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-base">Selection Tools</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        {/* Mode Toggle */}
-                        <div className="flex gap-2">
-                          <Button
-                            variant={selectionMode === 'include' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => handleModeChange('include')}
-                            className="flex-1"
-                            data-testid="button-mode-include"
-                          >
-                            Include Mode
-                          </Button>
-                          <Button
-                            variant={selectionMode === 'exclude' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => handleModeChange('exclude')}
-                            className="flex-1"
-                            data-testid="button-mode-exclude"
-                          >
-                            Exclude Mode
-                          </Button>
-                        </div>
-                        
-                        {/* Action Buttons */}
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handleInvert}
-                            className="flex-1"
-                            data-testid="button-invert"
-                          >
-                            <RotateCcw className="h-4 w-4 mr-2" />
-                            Invert
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handleClearAll}
-                            className="flex-1"
-                            data-testid="button-clear-all-blocks"
-                          >
-                            <X className="h-4 w-4 mr-2" />
-                            Clear All
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
+                    {/* Selection Tools */}
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-medium">Selection Tools</h3>
+                      <div className="flex gap-2">
+                        <Button
+                          variant={selectionMode === 'include' ? 'default' : 'ghost'}
+                          size="sm"
+                          onClick={() => handleModeChange('include')}
+                          className="flex-1"
+                          data-testid="button-mode-include"
+                        >
+                          Include Mode
+                        </Button>
+                        <Button
+                          variant={selectionMode === 'exclude' ? 'default' : 'ghost'}
+                          size="sm"
+                          onClick={() => handleModeChange('exclude')}
+                          className="flex-1"
+                          data-testid="button-mode-exclude"
+                        >
+                          Exclude Mode
+                        </Button>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleInvert}
+                          className="flex-1"
+                          data-testid="button-invert"
+                        >
+                          <RotateCcw className="h-4 w-4 mr-2" />
+                          Invert
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleClearAll}
+                          className="flex-1"
+                          data-testid="button-clear-all-blocks"
+                        >
+                          <X className="h-4 w-4 mr-2" />
+                          Clear All
+                        </Button>
+                      </div>
+                    </div>
 
                     <div
                       ref={mapContainer}
                       style={{ height: '520px', width: '100%' }}
-                      className="rounded-card border [&_.mapboxgl-canvas]:rounded-card"
+                      className="rounded-lg overflow-hidden [&_.mapboxgl-canvas]:rounded-lg"
                       data-testid="map-container"
                     />
                     {!mapboxConfig.tilesUrl && (
@@ -1314,7 +1283,7 @@ export default function BlocksOnboardingWizard() {
                 
                 {/* Selected Blocks */}
                 {wizardState.selectedBlocks.size > 0 && (
-                  <div className="sticky bottom-0 bg-background border-t p-4 -mx-6 -mb-6">
+                  <div className="pt-4 border-t border-border/50">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium" data-testid="text-blocks-label">
                         {selectedBoroughNames.join(", ")} • {selectedNeighborhoodNames.length} neighborhoods • {wizardState.selectedBlocks.size} blocks
@@ -1480,8 +1449,7 @@ export default function BlocksOnboardingWizard() {
                 )}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+        </div>
       </div>
     </AppShell>
   );

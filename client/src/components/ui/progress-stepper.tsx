@@ -15,13 +15,12 @@ export interface ProgressStepperProps {
 }
 
 /**
- * ProgressStepper - Horizontal step indicator
+ * ProgressStepper - Minimal horizontal breadcrumb-style progress indicator
  * 
  * Features:
- * - Current step highlighted in Accent
- * - Completed steps in Ink
- * - Future steps in Gray-3
- * - Optional click navigation with onStepClick
+ * - Current step highlighted with bold weight
+ * - Completed steps shown with check icon
+ * - Clean text-based design inspired by Linear
  */
 export const ProgressStepper: React.FC<ProgressStepperProps> = ({
   steps,
@@ -33,11 +32,10 @@ export const ProgressStepper: React.FC<ProgressStepperProps> = ({
 
   return (
     <div className={cn("w-full", className)} data-testid="progress-stepper">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center justify-center gap-3">
         {steps.map((step, index) => {
           const isCompleted = index < currentIndex;
           const isCurrent = step.id === currentStep;
-          const isFuture = index > currentIndex;
           const isClickable = onStepClick && (isCompleted || isCurrent);
 
           return (
@@ -46,35 +44,22 @@ export const ProgressStepper: React.FC<ProgressStepperProps> = ({
                 onClick={() => isClickable && onStepClick?.(step.id)}
                 disabled={!isClickable}
                 className={cn(
-                  "group flex flex-col items-center gap-2 transition-opacity",
-                  isClickable && "cursor-pointer",
+                  "flex items-center gap-1.5 transition-colors text-sm",
+                  isClickable && "cursor-pointer hover:text-foreground",
                   !isClickable && "cursor-default"
                 )}
                 data-testid={`step-${step.id}`}
                 aria-current={isCurrent ? "step" : undefined}
               >
-                <div
-                  className={cn(
-                    "flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all",
-                    isCompleted && "border-ink bg-ink text-white",
-                    isCurrent && "border-primary bg-primary text-white scale-110",
-                    isFuture && "border-gray-3 bg-transparent text-muted-foreground",
-                    isClickable && "hover:scale-105"
-                  )}
-                >
-                  {isCompleted ? (
-                    <Check className="h-5 w-5" data-testid={`check-${step.id}`} />
-                  ) : (
-                    <span className="text-sm font-semibold">{index + 1}</span>
-                  )}
-                </div>
-
+                {isCompleted && (
+                  <Check className="h-3.5 w-3.5 text-primary" data-testid={`check-${step.id}`} />
+                )}
                 <span
                   className={cn(
-                    "text-xs font-medium transition-colors hidden sm:block",
-                    isCurrent && "text-foreground",
-                    isCompleted && "text-foreground",
-                    isFuture && "text-muted-foreground"
+                    "transition-all",
+                    isCurrent && "text-foreground font-semibold",
+                    isCompleted && "text-muted-foreground font-normal",
+                    !isCompleted && !isCurrent && "text-muted-foreground/50 font-normal"
                   )}
                 >
                   {step.label}
@@ -82,14 +67,7 @@ export const ProgressStepper: React.FC<ProgressStepperProps> = ({
               </button>
 
               {index < steps.length - 1 && (
-                <div
-                  className={cn(
-                    "h-0.5 flex-1 transition-colors",
-                    index < currentIndex && "bg-ink",
-                    index >= currentIndex && "bg-gray-3"
-                  )}
-                  data-testid={`connector-${index}`}
-                />
+                <span className="text-muted-foreground/30 select-none">/</span>
               )}
             </React.Fragment>
           );
